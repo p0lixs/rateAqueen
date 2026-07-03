@@ -1,0 +1,18 @@
+import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabase";
+
+export async function POST(request: Request) {
+  try {
+    const { token, ranking } = await request.json() as { token?: string; ranking?: string[] };
+    if (!token || !Array.isArray(ranking)) return NextResponse.json({ error: "Voto no válido" }, { status: 400 });
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.rpc("submit_anonymous_ballot", { p_token: token, p_ranking: ranking });
+    if (error) {
+      const known = error.message.includes("already voted") ? "Esta invitación ya se ha utilizado" : error.message.includes("invalid ranking") ? "La clasificación no es válida" : "No se pudo guardar el voto";
+      return NextResponse.json({ error: known }, { status: 400 });
+    }
+    return NextResponse.json({ status: data });
+  } catch {
+    return NextResponse.json({ error: "Petición no válida" }, { status: 400 });
+  }
+}
