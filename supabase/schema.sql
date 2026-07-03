@@ -63,7 +63,7 @@ declare
   v_invitation public.invitations%rowtype;
   v_queen_count integer;
   v_valid_count integer;
-  v_status text;
+  v_event_status text;
 begin
   select * into v_invitation
   from public.invitations
@@ -75,6 +75,14 @@ begin
   end if;
   if v_invitation.has_voted then
     raise exception 'already voted';
+  end if;
+
+  select status into v_event_status
+  from public.events
+  where id = v_invitation.event_id
+  for update;
+  if v_event_status <> 'voting' then
+    raise exception 'voting closed';
   end if;
 
   if p_user_id is not null then
@@ -109,17 +117,7 @@ begin
   set has_voted = true, voted_at = now(), user_id = coalesce(user_id, p_user_id)
   where id = v_invitation.id;
 
-  if not exists (
-    select 1 from public.invitations
-    where event_id = v_invitation.event_id and has_voted = false
-  ) then
-    update public.events set status = 'results' where id = v_invitation.event_id;
-    v_status := 'results';
-  else
-    v_status := 'voting';
-  end if;
-
-  return v_status;
+  return 'voting';
 end;
 $$;
 

@@ -48,7 +48,7 @@ export default function Home() {
       <section className="hero landing-hero">
         <p className="eyebrow">The ranking game</p>
         <h1>Que gane<br /><em>la mejor.</em></h1>
-        <p className="lede">Crea rankings privados, invita mediante enlaces únicos y descubre el resultado cuando todo el grupo haya votado.</p>
+        <p className="lede">Crea rankings privados, invita mediante enlaces únicos y publica el resultado cuando decidas cerrar la votación.</p>
         <div className="hero-actions"><a className="btn btn-dark" href="/auth?mode=signup"><Sparkles size={17} /> Crear una cuenta</a><a className="btn btn-soft" href="/auth">Iniciar sesión</a></div>
         <p className="guest-note"><DoorOpen size={15} /> ¿Te han invitado? No necesitas registrarte: abre directamente el enlace que has recibido.</p>
       </section>

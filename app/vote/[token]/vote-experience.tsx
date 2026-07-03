@@ -74,10 +74,10 @@ export default function VoteExperience({ token }: { token: string }) {
   if (error && !data) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   if (data.status === "results") {
-    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Sashay, results</p><h2>Ya están todos los votos</h2><p className="lede">La clasificación final está lista.</p><a className="btn btn-primary" href={`/results/${token}`}>Ver clasificación</a></section></main>;
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Sashay, results</p><h2>Votación cerrada</h2><p className="lede">La clasificación final está lista.</p><a className="btn btn-primary" href={`/results/${token}`}>Ver clasificación</a></section></main>;
   }
   if (data.voter.has_voted) {
-    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Voto recibido</p><h2>Gracias, {data.voter.nickname}</h2><p className="lede">Tu orden se ha guardado de forma anónima. El resultado aparecerá cuando vote todo el grupo.</p><div className="progress">{data.votes_cast} de {data.votes_total} votos recibidos</div><button className="btn btn-primary" onClick={load}>Comprobar resultados</button></section></main>;
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Voto recibido</p><h2>Gracias, {data.voter.nickname}</h2><p className="lede">Tu orden se ha guardado de forma anónima. La administradora publicará el resultado cuando cierre la votación.</p><div className="progress">{data.votes_cast} de {data.votes_total} votos recibidos</div><button className="btn btn-primary" onClick={load}>Comprobar resultados</button></section></main>;
   }
 
   return (

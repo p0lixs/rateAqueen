@@ -1,6 +1,6 @@
 # Rate a Queen
 
-Aplicación web móvil para crear rankings privados. Cada cuenta puede organizar varias salas y conservar las invitaciones que haya abierto. La organizadora prepara las reinas (con foto opcional) y las participantes, comparte un enlace personal con cada una y la clasificación aparece automáticamente cuando se reciben todos los votos. Los invitados pueden votar y ver resultados sin crear una cuenta.
+Aplicación web móvil para crear rankings privados. Cada cuenta puede organizar varias salas y conservar las invitaciones que haya abierto. La organizadora prepara las reinas (con foto opcional), comparte enlaces personales, puede añadir participantes mientras la sala está abierta y decide cuándo cerrar para publicar la clasificación. Los invitados pueden votar y ver resultados sin crear una cuenta.
 
 ## Privacidad del voto
 
@@ -25,6 +25,8 @@ La `publishable key` puede usarse en el navegador. La `secret key` es secreta: s
 No vuelvas a ejecutar el esquema completo. Abre **SQL Editor** y ejecuta solamente [`supabase/migrations/002_accounts.sql`](supabase/migrations/002_accounts.sql). Después, en **Authentication → URL Configuration**, configura la URL del sitio (`http://localhost:3000` en local y el dominio de Vercel al publicar) y añade ambas a las URLs de redirección.
 
 Después de la migración de cuentas, ejecuta también [`supabase/migrations/003_one_vote_per_account.sql`](supabase/migrations/003_one_vote_per_account.sql) para impedir que una misma cuenta vote con dos invitaciones de la misma sala.
+
+Finalmente, ejecuta [`supabase/migrations/004_manual_close.sql`](supabase/migrations/004_manual_close.sql) para activar el cierre manual de las votaciones.
 
 4. Instala y ejecuta:
 

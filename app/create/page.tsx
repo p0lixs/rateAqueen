@@ -68,7 +68,7 @@ export default function CreateRoom() {
       <section className="hero">
         <p className="eyebrow">The ranking game</p>
         <h1>Que gane<br /><em>la mejor.</em></h1>
-        <p className="lede">Crea tu elenco, invita a tus amigas y descubrid el ranking del grupo. Cada voto es secreto. El resultado aparece cuando todas hayan votado.</p>
+        <p className="lede">Crea tu elenco, invita a tus amigas y cierra la votación cuando quieras publicar el ranking. Cada voto es secreto.</p>
       </section>
 
       <form className="card" onSubmit={submit}>
