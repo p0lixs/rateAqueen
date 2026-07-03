@@ -1,6 +1,6 @@
 # Rate a Queen
 
-Aplicación web móvil para crear rankings privados. La organizadora prepara las reinas y las participantes, comparte un enlace personal con cada una y la clasificación aparece automáticamente cuando se reciben todos los votos.
+Aplicación web móvil para crear rankings privados. Cada cuenta puede organizar varias salas y conservar las invitaciones que haya abierto. La organizadora prepara las reinas (con foto opcional) y las participantes, comparte un enlace personal con cada una y la clasificación aparece automáticamente cuando se reciben todos los votos. Los invitados pueden votar y ver resultados sin crear una cuenta.
 
 ## Privacidad del voto
 
@@ -13,11 +13,18 @@ La identidad y la papeleta se guardan en tablas distintas. Una invitación regis
 3. Copia `.env.example` a `.env.local` y completa:
 
 ```env
-SUPABASE_URL=https://TU-PROYECTO.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_TU_CLAVE_PUBLICA
 SUPABASE_SECRET_KEY=sb_secret_TU_CLAVE_SECRETA
 ```
 
-La `secret key` es secreta: solo debe configurarse en el servidor, nunca utilizarse en una variable que empiece por `NEXT_PUBLIC_`.
+La `publishable key` puede usarse en el navegador. La `secret key` es secreta: solo debe configurarse en el servidor, nunca utilizarse en una variable que empiece por `NEXT_PUBLIC_`.
+
+### Si ya instalaste la primera versión
+
+No vuelvas a ejecutar el esquema completo. Abre **SQL Editor** y ejecuta solamente [`supabase/migrations/002_accounts.sql`](supabase/migrations/002_accounts.sql). Después, en **Authentication → URL Configuration**, configura la URL del sitio (`http://localhost:3000` en local y el dominio de Vercel al publicar) y añade ambas a las URLs de redirección.
+
+Después de la migración de cuentas, ejecuta también [`supabase/migrations/003_one_vote_per_account.sql`](supabase/migrations/003_one_vote_per_account.sql) para impedir que una misma cuenta vote con dos invitaciones de la misma sala.
 
 4. Instala y ejecuta:
 
@@ -28,7 +35,7 @@ npm run dev
 
 ## Publicación online
 
-Importa el repositorio en [Vercel](https://vercel.com/), configura las mismas dos variables de entorno y despliega.
+Importa el repositorio en [Vercel](https://vercel.com/), configura las mismas tres variables de entorno y despliega.
 
 ## Reglas del ranking
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Crown, ExternalLink, RefreshCw } from "lucide-react";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 type AdminData = {
   title: string;
@@ -15,7 +16,9 @@ export default function ManageEvent({ token }: { token: string }) {
   const [copied, setCopied] = useState("");
 
   const load = useCallback(async () => {
-    const response = await fetch(`/api/manage/${token}`, { cache: "no-store" });
+    const { data: { session } } = await getSupabaseBrowser().auth.getSession();
+    const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
+    const response = await fetch(`/api/manage/${token}`, { cache: "no-store", headers });
     const json = await response.json();
     if (!response.ok) return setError(json.error || "No se pudo abrir la partida");
     setData(json);

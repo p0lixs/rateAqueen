@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getUserFromRequest } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -9,6 +10,8 @@ type PersonInput = { name: string; nickname: string };
 
 export async function POST(request: Request) {
   try {
+    const user = await getUserFromRequest(request);
+    if (!user) return NextResponse.json({ error: "Debes iniciar sesión para crear una sala" }, { status: 401 });
     const form = await request.formData();
     const title = String(form.get("title") || "").trim();
     const queens = JSON.parse(String(form.get("queens") || "[]")) as QueenInput[];
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
     const adminToken = createToken();
     const { data: createdEvent, error: eventError } = await supabase
       .from("events")
-      .insert({ title, admin_token: adminToken })
+      .insert({ title, admin_token: adminToken, owner_id: user.id })
       .select("id")
       .single();
     if (eventError) throw eventError;
@@ -33,7 +36,11 @@ export async function POST(request: Request) {
     const queenRows = [];
     for (let index = 0; index < queens.length; index++) {
       const file = form.get(`photo_${index}`);
-      if (!(file instanceof File) || !file.type.startsWith("image/") || file.size > 5_000_000) {
+      if (!(file instanceof File)) {
+        queenRows.push({ event_id: createdEvent.id, name: queens[index].name.trim(), image_url: "", sort_order: index });
+        continue;
+      }
+      if (!file.type.startsWith("image/") || file.size > 5_000_000) {
         throw new Error(`La foto de ${queens[index].name || `reina ${index + 1}`} no es válida`);
       }
       const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";

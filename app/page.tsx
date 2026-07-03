@@ -1,97 +1,83 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
-import { Crown, ImagePlus, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowRight, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
-type QueenDraft = { name: string; file?: File; preview?: string };
-type PersonDraft = { name: string; nickname: string };
+type Room = {
+  title: string;
+  status: "voting" | "results";
+  image_url: string | null;
+  votes_cast: number;
+  votes_total: number;
+  href: string;
+  role: "owner" | "guest";
+};
 
 export default function Home() {
-  const [title, setTitle] = useState("");
-  const [queens, setQueens] = useState<QueenDraft[]>([{ name: "" }, { name: "" }, { name: "" }]);
-  const [people, setPeople] = useState<PersonDraft[]>([{ name: "", nickname: "" }, { name: "", nickname: "" }]);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [rooms, setRooms] = useState<{ created: Room[]; invited: Room[] }>({ created: [], invited: [] });
   const [error, setError] = useState("");
 
-  function updateQueen(index: number, patch: Partial<QueenDraft>) {
-    setQueens((current) => current.map((queen, i) => i === index ? { ...queen, ...patch } : queen));
+  const load = useCallback(async () => {
+    const supabase = getSupabaseBrowser();
+    const { data: { session } } = await supabase.auth.getSession();
+    setUser(session?.user || null);
+    if (!session) return;
+    const response = await fetch("/api/dashboard", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+    const json = await response.json();
+    if (!response.ok) setError(json.error || "No se pudieron cargar las salas");
+    else setRooms(json);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function logout() {
+    await getSupabaseBrowser().auth.signOut();
+    setRooms({ created: [], invited: [] });
+    setUser(null);
   }
 
-  function pickPhoto(index: number, event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (file) updateQueen(index, { file, preview: URL.createObjectURL(file) });
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setError("");
-    if (queens.some((queen) => !queen.name.trim() || !queen.file)) {
-      return setError("Añade el nombre y una foto para cada reina.");
-    }
-    if (people.some((person) => !person.name.trim() || !person.nickname.trim())) {
-      return setError("Añade el nombre y el apodo de cada participante.");
-    }
-
-    setLoading(true);
-    const form = new FormData();
-    form.set("title", title.trim());
-    form.set("queens", JSON.stringify(queens.map((queen) => ({ name: queen.name.trim() }))));
-    form.set("people", JSON.stringify(people.map((person) => ({ name: person.name.trim(), nickname: person.nickname.trim() }))));
-    queens.forEach((queen, index) => form.set(`photo_${index}`, queen.file!));
-
-    try {
-      const response = await fetch("/api/events", { method: "POST", body: form });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "No se pudo crear la partida");
-      window.location.href = `/manage/${data.adminToken}`;
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Ha ocurrido un error");
-      setLoading(false);
-    }
-  }
-
-  return (
+  if (user === undefined) return <div className="spinner" />;
+  if (!user) return (
     <main className="shell">
       <div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div>
-      <section className="hero">
+      <section className="hero landing-hero">
         <p className="eyebrow">The ranking game</p>
         <h1>Que gane<br /><em>la mejor.</em></h1>
-        <p className="lede">Crea tu elenco, invita a tus amigas y descubrid el ranking del grupo. Cada voto es secreto. El resultado aparece cuando todas hayan votado.</p>
+        <p className="lede">Crea rankings privados, invita mediante enlaces únicos y descubre el resultado cuando todo el grupo haya votado.</p>
+        <div className="hero-actions"><a className="btn btn-dark" href="/auth?mode=signup"><Sparkles size={17} /> Crear una cuenta</a><a className="btn btn-soft" href="/auth">Iniciar sesión</a></div>
+        <p className="guest-note"><DoorOpen size={15} /> ¿Te han invitado? No necesitas registrarte: abre directamente el enlace que has recibido.</p>
       </section>
-
-      <form className="card" onSubmit={submit}>
-        <p className="eyebrow">Nueva partida</p>
-        <div className="field">
-          <label htmlFor="title">Nombre de la edición</label>
-          <input id="title" className="input" placeholder="Ej. All Stars: episodio 4" value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={80} />
-        </div>
-
-        <div className="section-title"><h3>Las reinas</h3><span className="count">{queens.length} reinas</span></div>
-        {queens.map((queen, index) => (
-          <div className="repeat-row" key={index}>
-            <label className="photo-input" title="Añadir foto">
-              {queen.preview ? <img src={queen.preview} alt="" /> : <ImagePlus size={20} />}
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => pickPhoto(index, event)} />
-            </label>
-            <input className="input" placeholder={`Reina ${index + 1}`} value={queen.name} onChange={(e) => updateQueen(index, { name: e.target.value })} maxLength={60} />
-            <button type="button" className="icon-btn" aria-label="Eliminar reina" disabled={queens.length <= 2} onClick={() => setQueens(queens.filter((_, i) => i !== index))}><Trash2 size={18} /></button>
-          </div>
-        ))}
-        <button type="button" className="btn btn-soft" onClick={() => setQueens([...queens, { name: "" }])}><Plus size={16} /> Añadir reina</button>
-
-        <div className="section-title"><h3>Participantes</h3><span className="count">Recibirán enlaces únicos</span></div>
-        {people.map((person, index) => (
-          <div className="repeat-row person-row" key={index}>
-            <input className="input" placeholder="Nombre" value={person.name} onChange={(e) => setPeople(people.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} maxLength={60} />
-            <input className="input nickname" placeholder="Apodo" value={person.nickname} onChange={(e) => setPeople(people.map((item, i) => i === index ? { ...item, nickname: e.target.value } : item))} maxLength={60} />
-            <button type="button" className="icon-btn" aria-label="Eliminar participante" disabled={people.length <= 1} onClick={() => setPeople(people.filter((_, i) => i !== index))}><Trash2 size={18} /></button>
-          </div>
-        ))}
-        <button type="button" className="btn btn-soft" onClick={() => setPeople([...people, { name: "", nickname: "" }])}><Plus size={16} /> Añadir persona</button>
-
-        {error && <div className="notice error">{error}</div>}
-        <button className="btn btn-primary" disabled={loading}><Sparkles size={18} /> {loading ? "Creando la partida…" : "Crear partida"}</button>
-      </form>
     </main>
   );
+
+  return (
+    <main className="shell wide">
+      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><button className="icon-btn" onClick={logout} title="Cerrar sesión"><LogOut size={19} /></button></div>
+      <section className="dashboard-head">
+        <div><p className="eyebrow">Tu panel</p><h2>Mis salas</h2><p className="lede">{user.email}</p></div>
+        <a className="btn btn-dark" href="/create"><Plus size={17} /> Nueva sala</a>
+      </section>
+      {error && <div className="notice error">{error}</div>}
+      <RoomSection title="Creadas por ti" rooms={rooms.created} empty="Todavía no has creado ninguna sala." />
+      <RoomSection title="Te han invitado" rooms={rooms.invited} empty="Las invitaciones que abras con tu sesión iniciada aparecerán aquí." />
+    </main>
+  );
+}
+
+function RoomSection({ title, rooms, empty }: { title: string; rooms: Room[]; empty: string }) {
+  return <section className="room-section">
+    <div className="section-title"><h3>{title}</h3><span className="count">{rooms.length} salas</span></div>
+    {rooms.length === 0 ? <div className="empty-state">{empty}</div> : <div className="room-grid">{rooms.map((room) => (
+      <a className="room-card" href={room.href} key={room.href}>
+        {room.image_url ? <img src={room.image_url} alt="" /> : <div className="room-placeholder"><Crown /></div>}
+        <div className="room-body"><span className={`room-status ${room.status}`}>{room.status === "results" ? "Resultados" : "Votación abierta"}</span><h3>{room.title}</h3><p><Users size={14} /> {room.votes_cast} de {room.votes_total} votos</p></div>
+        <ArrowRight className="room-arrow" size={19} />
+      </a>
+    ))}</div>}
+  </section>;
 }

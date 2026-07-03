@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getUserFromRequest } from "@/lib/supabase";
 
-export async function GET(_: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = getSupabaseAdmin();
   const { data: invitation, error } = await supabase
     .from("invitations")
-    .select("event_id,name,nickname,has_voted,events(title,status,queens(id,name,image_url,sort_order))")
+    .select("id,event_id,name,nickname,has_voted,user_id,events(title,status,queens(id,name,image_url,sort_order))")
     .eq("token", token)
     .single();
   if (error || !invitation) return NextResponse.json({ error: "Esta invitación no es válida" }, { status: 404 });
+
+  const user = await getUserFromRequest(request);
+  if (user && !invitation.user_id) {
+    const { data: existing } = await supabase.from("invitations").select("id,has_voted").eq("event_id", invitation.event_id).eq("user_id", user.id).maybeSingle();
+    if (existing && existing.id !== invitation.id) {
+      return NextResponse.json({ error: existing.has_voted ? "Ya has votado en esta sala con tu cuenta" : "Tu cuenta ya tiene otra invitación para esta sala" }, { status: 409 });
+    }
+    const { error: claimError } = await supabase.from("invitations").update({ user_id: user.id }).eq("id", invitation.id).is("user_id", null);
+    if (claimError) return NextResponse.json({ error: "Tu cuenta ya está vinculada a otra invitación de esta sala" }, { status: 409 });
+  } else if (user && invitation.user_id && invitation.user_id !== user.id) {
+    return NextResponse.json({ error: "Esta invitación está vinculada a otra cuenta" }, { status: 403 });
+  }
 
   const { data: invitations } = await supabase.from("invitations").select("has_voted").eq("event_id", invitation.event_id);
   const event = Array.isArray(invitation.events) ? invitation.events[0] : invitation.events;

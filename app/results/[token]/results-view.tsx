@@ -24,7 +24,7 @@ export default function ResultsView({ token }: { token: string }) {
         {data.results.map((queen, index) => (
           <div className="result-row" key={queen.id}>
             <span className="rank">{index + 1}</span>
-            <img className="queen-photo" src={queen.image_url} alt={queen.name} />
+            {queen.image_url ? <img className="queen-photo" src={queen.image_url} alt={queen.name} /> : <span className="queen-photo queen-photo-empty"><Crown size={23} /></span>}
             <span className="queen-name">{queen.name}</span>
             <span className="score"><strong>{queen.average.toFixed(2)}</strong><small>puntos</small></span>
           </div>

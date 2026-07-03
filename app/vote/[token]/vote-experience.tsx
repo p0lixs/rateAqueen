@@ -6,13 +6,14 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities";
 import { Crown, GripVertical, LockKeyhole, Send } from "lucide-react";
 import type { EventInfo, Queen } from "@/lib/types";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 function SortableQueen({ queen, index }: { queen: Queen; index: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: queen.id });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={`queen-row ${isDragging ? "dragging" : ""}`}>
       <span className="rank">{index + 1}</span>
-      <img className="queen-photo" src={queen.image_url} alt={queen.name} />
+      {queen.image_url ? <img className="queen-photo" src={queen.image_url} alt={queen.name} /> : <span className="queen-photo queen-photo-empty"><Crown size={23} /></span>}
       <span className="queen-name">{queen.name}</span>
       <button type="button" className="icon-btn drag-handle" aria-label={`Mover a ${queen.name}`} {...attributes} {...listeners}><GripVertical size={21} /></button>
     </div>
@@ -31,7 +32,9 @@ export default function VoteExperience({ token }: { token: string }) {
   );
 
   const load = useCallback(async () => {
-    const response = await fetch(`/api/invitations/${token}`, { cache: "no-store" });
+    const { data: { session } } = await getSupabaseBrowser().auth.getSession();
+    const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
+    const response = await fetch(`/api/invitations/${token}`, { cache: "no-store", headers });
     const json = await response.json();
     if (!response.ok) return setError(json.error || "Esta invitación no es válida");
     setData(json);
@@ -51,9 +54,10 @@ export default function VoteExperience({ token }: { token: string }) {
     if (!confirm("¿Enviar este orden? Después no podrás cambiarlo.")) return;
     setSending(true);
     setError("");
+    const { data: { session } } = await getSupabaseBrowser().auth.getSession();
     const response = await fetch("/api/votes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
       body: JSON.stringify({ token, ranking: queens.map((queen) => queen.id) }),
     });
     const json = await response.json();
