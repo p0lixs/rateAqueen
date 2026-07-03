@@ -13,12 +13,11 @@ La identidad y la papeleta se guardan en tablas distintas. Una invitación regis
 3. Copia `.env.example` a `.env.local` y completa:
 
 ```env
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_SUPABASE_URL=https://TU-PROYECTO.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=TU_SERVICE_ROLE_KEY
+SUPABASE_URL=https://TU-PROYECTO.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_TU_CLAVE_SECRETA
 ```
 
-La `service role key` es secreta: solo debe configurarse en el servidor, nunca utilizarse en una variable que empiece por `NEXT_PUBLIC_`.
+La `secret key` es secreta: solo debe configurarse en el servidor, nunca utilizarse en una variable que empiece por `NEXT_PUBLIC_`.
 
 4. Instala y ejecuta:
 
@@ -29,7 +28,7 @@ npm run dev
 
 ## Publicación online
 
-Importa el repositorio en [Vercel](https://vercel.com/), configura las mismas tres variables de entorno y despliega. En `NEXT_PUBLIC_APP_URL` usa el dominio definitivo, por ejemplo `https://mi-rate-a-queen.vercel.app`.
+Importa el repositorio en [Vercel](https://vercel.com/), configura las mismas dos variables de entorno y despliega.
 
 ## Reglas del ranking
 
