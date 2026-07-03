@@ -7,12 +7,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const supabase = getSupabaseAdmin();
   const { data: invitation, error } = await supabase
     .from("invitations")
-    .select("id,event_id,name,nickname,has_voted,user_id,events(title,status,queens(id,name,image_url,sort_order))")
+    .select("id,event_id,name,nickname,has_voted,user_id,events(title,status,visibility,queens(id,name,image_url,sort_order))")
     .eq("token", token)
     .single();
   if (error || !invitation) return NextResponse.json({ error: "Esta invitación no es válida" }, { status: 404 });
 
   const user = await getUserFromRequest(request);
+  const event = Array.isArray(invitation.events) ? invitation.events[0] : invitation.events;
+  if (!event) return NextResponse.json({ error: "La partida no existe" }, { status: 404 });
+  if (event.visibility === "public" && !user) return NextResponse.json({ error: "Debes iniciar sesión para acceder a una sala pública" }, { status: 401 });
   if (user && !invitation.user_id) {
     const { data: existing } = await supabase.from("invitations").select("id,has_voted").eq("event_id", invitation.event_id).eq("user_id", user.id).maybeSingle();
     if (existing && existing.id !== invitation.id) {
@@ -25,8 +28,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   }
 
   const { data: invitations } = await supabase.from("invitations").select("has_voted").eq("event_id", invitation.event_id);
-  const event = Array.isArray(invitation.events) ? invitation.events[0] : invitation.events;
-  if (!event) return NextResponse.json({ error: "La partida no existe" }, { status: 404 });
   const queens = [...event.queens].sort((a, b) => a.sort_order - b.sort_order).map(({ sort_order: _, ...queen }) => queen);
 
   return NextResponse.json({

@@ -5,6 +5,8 @@ create table public.events (
   id uuid primary key default gen_random_uuid(),
   title text not null check (char_length(title) between 1 and 80),
   admin_token text not null unique,
+  visibility text not null default 'private' check (visibility in ('private', 'public')),
+  public_token text unique,
   owner_id uuid references auth.users(id) on delete set null,
   status text not null default 'voting' check (status in ('voting', 'results')),
   created_at timestamptz not null default now()
@@ -42,6 +44,7 @@ create index invitations_event_id_idx on public.invitations(event_id);
 create index invitations_user_id_idx on public.invitations(user_id);
 create unique index invitations_one_account_per_event_idx on public.invitations(event_id, user_id) where user_id is not null;
 create index events_owner_id_idx on public.events(owner_id);
+create index events_public_search_idx on public.events(visibility, status, created_at desc);
 create index queens_event_id_idx on public.queens(event_id);
 create index ballots_event_id_idx on public.ballots(event_id);
 
@@ -64,6 +67,7 @@ declare
   v_queen_count integer;
   v_valid_count integer;
   v_event_status text;
+  v_visibility text;
 begin
   select * into v_invitation
   from public.invitations
@@ -77,12 +81,15 @@ begin
     raise exception 'already voted';
   end if;
 
-  select status into v_event_status
+  select status, visibility into v_event_status, v_visibility
   from public.events
   where id = v_invitation.event_id
   for update;
   if v_event_status <> 'voting' then
     raise exception 'voting closed';
+  end if;
+  if v_visibility = 'public' and (p_user_id is null or v_invitation.user_id is null or v_invitation.user_id <> p_user_id) then
+    raise exception 'public room requires member account';
   end if;
 
   if p_user_id is not null then

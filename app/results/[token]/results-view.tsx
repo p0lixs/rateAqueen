@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { Crown, Trophy } from "lucide-react";
 import type { Result } from "@/lib/types";
 import SiteHeader from "@/components/site-header";
+import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 export default function ResultsView({ token }: { token: string }) {
   const [data, setData] = useState<{ title: string; votes: number; results: Result[] } | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
-    fetch(`/api/results/${token}`, { cache: "no-store" }).then(async (response) => {
+    getSupabaseBrowser().auth.getSession().then(({ data: { session } }) => fetch(`/api/results/${token}`, { cache: "no-store", headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined })).then(async (response) => {
       const json = await response.json();
+      if (response.status === 401) return void (window.location.href = `/auth?next=${encodeURIComponent(`/results/${token}`)}`);
       if (!response.ok) setError(json.error || "No se pueden mostrar los resultados");
       else setData(json);
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Compass, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
@@ -60,7 +60,7 @@ export default function Home() {
       <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><button className="icon-btn" onClick={logout} title="Cerrar sesión"><LogOut size={19} /></button></div>
       <section className="dashboard-head">
         <div><p className="eyebrow">Tu panel</p><h2>Mis salas</h2><p className="lede">{user.email}</p></div>
-        <a className="btn btn-dark" href="/create"><Plus size={17} /> Nueva sala</a>
+        <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> Explorar públicas</a><a className="btn btn-dark" href="/create"><Plus size={17} /> Nueva sala</a></div>
       </section>
       {error && <div className="notice error">{error}</div>}
       <RoomSection title="Creadas por ti" rooms={rooms.created} empty="Todavía no has creado ninguna sala." />

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, Crown, ImagePlus, Plus, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Crown, Globe2, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 
 type QueenDraft = { name: string; file?: File; preview?: string };
@@ -11,6 +11,7 @@ export default function CreateRoom() {
   const [title, setTitle] = useState("");
   const [queens, setQueens] = useState<QueenDraft[]>([{ name: "" }, { name: "" }, { name: "" }]);
   const [people, setPeople] = useState<PersonDraft[]>([{ name: "", nickname: "" }, { name: "", nickname: "" }]);
+  const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,7 +36,7 @@ export default function CreateRoom() {
     if (queens.some((queen) => !queen.name.trim())) {
       return setError("Añade el nombre de cada reina.");
     }
-    if (people.some((person) => !person.name.trim() || !person.nickname.trim())) {
+    if (visibility === "private" && people.some((person) => !person.name.trim() || !person.nickname.trim())) {
       return setError("Añade el nombre y el apodo de cada participante.");
     }
 
@@ -43,7 +44,8 @@ export default function CreateRoom() {
     const form = new FormData();
     form.set("title", title.trim());
     form.set("queens", JSON.stringify(queens.map((queen) => ({ name: queen.name.trim() }))));
-    form.set("people", JSON.stringify(people.map((person) => ({ name: person.name.trim(), nickname: person.nickname.trim() }))));
+    form.set("people", JSON.stringify(visibility === "private" ? people.map((person) => ({ name: person.name.trim(), nickname: person.nickname.trim() })) : []));
+    form.set("visibility", visibility);
     queens.forEach((queen, index) => { if (queen.file) form.set(`photo_${index}`, queen.file); });
 
     try {
@@ -78,6 +80,12 @@ export default function CreateRoom() {
           <input id="title" className="input" placeholder="Ej. All Stars: episodio 4" value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={80} />
         </div>
 
+        <div className="section-title"><h3>Tipo de sala</h3></div>
+        <div className="visibility-picker">
+          <button type="button" className={`visibility-option ${visibility === "private" ? "active" : ""}`} onClick={() => setVisibility("private")}><LockKeyhole size={20} /><span><strong>Privada</strong><small>Solo con invitaciones individuales</small></span></button>
+          <button type="button" className={`visibility-option ${visibility === "public" ? "active" : ""}`} onClick={() => setVisibility("public")}><Globe2 size={20} /><span><strong>Pública</strong><small>Buscable y con enlace global</small></span></button>
+        </div>
+
         <div className="section-title"><h3>Las reinas</h3><span className="count">{queens.length} reinas</span></div>
         {queens.map((queen, index) => (
           <div className="repeat-row" key={index}>
@@ -92,7 +100,7 @@ export default function CreateRoom() {
         <p className="field-hint">Las fotos son opcionales.</p>
         <button type="button" className="btn btn-soft" onClick={() => setQueens([...queens, { name: "" }])}><Plus size={16} /> Añadir reina</button>
 
-        <div className="section-title"><h3>Participantes</h3><span className="count">Recibirán enlaces únicos</span></div>
+        {visibility === "private" && <><div className="section-title"><h3>Participantes</h3><span className="count">Recibirán enlaces únicos</span></div>
         {people.map((person, index) => (
           <div className="repeat-row person-row" key={index}>
             <input className="input" placeholder="Nombre" value={person.name} onChange={(e) => setPeople(people.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} maxLength={60} />
@@ -100,7 +108,8 @@ export default function CreateRoom() {
             <button type="button" className="icon-btn" aria-label="Eliminar participante" disabled={people.length <= 1} onClick={() => setPeople(people.filter((_, i) => i !== index))}><Trash2 size={18} /></button>
           </div>
         ))}
-        <button type="button" className="btn btn-soft" onClick={() => setPeople([...people, { name: "", nickname: "" }])}><Plus size={16} /> Añadir persona</button>
+        <button type="button" className="btn btn-soft" onClick={() => setPeople([...people, { name: "", nickname: "" }])}><Plus size={16} /> Añadir persona</button></>}
+        {visibility === "public" && <div className="notice">Las personas se unirán desde el buscador o mediante el enlace global. Necesitarán una cuenta.</div>}
 
         {error && <div className="notice error">{error}</div>}
         <button className="btn btn-primary" disabled={loading}><Sparkles size={18} /> {loading ? "Creando la partida…" : "Crear partida"}</button>

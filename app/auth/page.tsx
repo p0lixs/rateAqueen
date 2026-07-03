@@ -21,15 +21,16 @@ export default function AuthPage() {
   async function submit(event: FormEvent) {
     event.preventDefault(); setLoading(true); setError(""); setMessage("");
     const supabase = getSupabaseBrowser();
+    const next = new URLSearchParams(window.location.search).get("next") || "/";
     if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}` } });
       if (error) setError(translate(error.message));
-      else if (data.session) window.location.href = "/";
+      else if (data.session) window.location.href = next;
       else setMessage("Revisa tu correo y confirma la cuenta para poder entrar.");
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(translate(error.message));
-      else window.location.href = new URLSearchParams(window.location.search).get("next") || "/";
+      else window.location.href = next;
     }
     setLoading(false);
   }

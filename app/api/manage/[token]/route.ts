@@ -6,7 +6,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("events")
-    .select("id,title,status,owner_id,invitations(name,nickname,token,has_voted)")
+    .select("id,title,status,visibility,public_token,owner_id,invitations(name,nickname,token,has_voted)")
     .eq("admin_token", token)
     .single();
   if (error || !data) return NextResponse.json({ error: "Enlace de administración no válido" }, { status: 404 });

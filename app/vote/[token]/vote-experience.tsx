@@ -37,6 +37,7 @@ export default function VoteExperience({ token }: { token: string }) {
     const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
     const response = await fetch(`/api/invitations/${token}`, { cache: "no-store", headers });
     const json = await response.json();
+    if (response.status === 401) return void (window.location.href = `/auth?next=${encodeURIComponent(`/vote/${token}`)}`);
     if (!response.ok) return setError(json.error || "Esta invitación no es válida");
     setData(json);
     setQueens(json.queens);

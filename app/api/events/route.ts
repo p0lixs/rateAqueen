@@ -16,8 +16,9 @@ export async function POST(request: Request) {
     const title = String(form.get("title") || "").trim();
     const queens = JSON.parse(String(form.get("queens") || "[]")) as QueenInput[];
     const people = JSON.parse(String(form.get("people") || "[]")) as PersonInput[];
+    const visibility = String(form.get("visibility") || "private") === "public" ? "public" : "private";
 
-    if (!title || queens.length < 2 || people.length < 1) {
+    if (!title || queens.length < 2 || (visibility === "private" && people.length < 1)) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
     }
     if (queens.length > 30 || people.length > 100) {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
     const adminToken = createToken();
     const { data: createdEvent, error: eventError } = await supabase
       .from("events")
-      .insert({ title, admin_token: adminToken, owner_id: user.id })
+      .insert({ title, admin_token: adminToken, owner_id: user.id, visibility, public_token: visibility === "public" ? createToken() : null })
       .select("id")
       .single();
     if (eventError) throw eventError;
@@ -53,15 +54,16 @@ export async function POST(request: Request) {
 
     const { error: queensError } = await supabase.from("queens").insert(queenRows);
     if (queensError) throw queensError;
-    const { error: peopleError } = await supabase.from("invitations").insert(
-      people.map((person) => ({
+    const invitationRows = people.map((person) => ({
         event_id: createdEvent.id,
         name: person.name.trim(),
         nickname: person.nickname.trim(),
         token: createToken(),
-      }))
-    );
-    if (peopleError) throw peopleError;
+      }));
+    if (invitationRows.length) {
+      const { error: peopleError } = await supabase.from("invitations").insert(invitationRows);
+      if (peopleError) throw peopleError;
+    }
 
     return NextResponse.json({ adminToken });
   } catch (cause) {

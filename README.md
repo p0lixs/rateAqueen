@@ -1,6 +1,6 @@
 # Rate a Queen
 
-Aplicación web móvil para crear rankings privados. Cada cuenta puede organizar varias salas y conservar las invitaciones que haya abierto. La organizadora prepara las reinas (con foto opcional), comparte enlaces personales, puede añadir participantes mientras la sala está abierta y decide cuándo cerrar para publicar la clasificación. Los invitados pueden votar y ver resultados sin crear una cuenta.
+Aplicación web móvil para crear rankings. Las salas privadas funcionan mediante invitaciones individuales y permiten votar sin cuenta. Las salas públicas aparecen en el buscador, tienen un enlace global y requieren registro para unirse, votar y consultar resultados. La organizadora prepara las reinas (con foto opcional), puede añadir participantes mientras la sala está abierta y decide cuándo cerrar para publicar la clasificación.
 
 ## Privacidad del voto
 
@@ -27,6 +27,8 @@ No vuelvas a ejecutar el esquema completo. Abre **SQL Editor** y ejecuta solamen
 Después de la migración de cuentas, ejecuta también [`supabase/migrations/003_one_vote_per_account.sql`](supabase/migrations/003_one_vote_per_account.sql) para impedir que una misma cuenta vote con dos invitaciones de la misma sala.
 
 Finalmente, ejecuta [`supabase/migrations/004_manual_close.sql`](supabase/migrations/004_manual_close.sql) para activar el cierre manual de las votaciones.
+
+Para añadir salas públicas, ejecuta [`supabase/migrations/005_public_rooms.sql`](supabase/migrations/005_public_rooms.sql) después de la migración 004.
 
 4. Instala y ejecuta:
 

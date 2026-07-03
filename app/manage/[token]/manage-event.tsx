@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, ExternalLink, LockKeyhole, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Globe2, LockKeyhole, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 
 type AdminData = {
   title: string;
   status: "voting" | "results";
+  visibility: "private" | "public";
+  public_token: string | null;
   invitations: { name: string; nickname: string; token: string; has_voted: boolean }[];
 };
 
@@ -35,6 +37,13 @@ export default function ManageEvent({ token }: { token: string }) {
     const link = `${window.location.origin}/vote/${invitationToken}`;
     await navigator.clipboard.writeText(link);
     setCopied(invitationToken);
+    setTimeout(() => setCopied(""), 1500);
+  }
+
+  async function copyPublicLink() {
+    if (!data?.public_token) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/join/${data.public_token}`);
+    setCopied("public");
     setTimeout(() => setCopied(""), 1500);
   }
 
@@ -83,6 +92,7 @@ export default function ManageEvent({ token }: { token: string }) {
       <section className="hero">
         <p className="eyebrow">Panel de organizadora</p>
         <h2>{data.title}</h2>
+        <span className="room-kind">{data.visibility === "public" ? <><Globe2 size={13} /> Sala pública</> : <><LockKeyhole size={13} /> Sala privada</>}</span>
         <p className="lede">Comparte cada enlace con su persona y añade nuevas participantes mientras la sala siga abierta. Tú decides cuándo cerrar y publicar el resultado.</p>
       </section>
       <div className="stat-grid">
@@ -90,6 +100,11 @@ export default function ManageEvent({ token }: { token: string }) {
         <div className="stat"><strong>{data.status === "results" ? "Publicado" : "Abierto"}</strong><span>estado</span></div>
       </div>
       {data.status === "results" && <a className="btn btn-primary" href={`/results/${token}`}><ExternalLink size={17} /> Ver clasificación final</a>}
+
+      {data.visibility === "public" && data.public_token && <section className="card public-link-card">
+        <div><p className="eyebrow">Enlace global</p><h3>Una invitación para todo el mundo</h3><p>Las personas con cuenta podrán abrirlo, unirse y votar.</p></div>
+        <button className="btn btn-soft" onClick={copyPublicLink}>{copied === "public" ? <Check size={15} /> : <Copy size={15} />} {copied === "public" ? "Copiado" : "Copiar enlace"}</button>
+      </section>}
 
       {data.status === "voting" && <section className="card add-participant-card">
         <div className="section-title"><h3>Añadir participante</h3><span className="count">La sala seguirá abierta</span></div>
