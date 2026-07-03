@@ -6,13 +6,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("events")
-    .select("id,title,status,visibility,public_token,owner_id,invitations(name,nickname,token,has_voted)")
+    .select("id,title,status,visibility,public_token,owner_id,invitations(name,nickname,token,has_voted,user_id)")
     .eq("admin_token", token)
     .single();
   if (error || !data) return NextResponse.json({ error: "Enlace de administración no válido" }, { status: 404 });
   const user = await getUserFromRequest(request);
   if (user && !data.owner_id) await supabase.from("events").update({ owner_id: user.id }).eq("id", data.id).is("owner_id", null);
   const { id: _id, owner_id: _ownerId, ...response } = data;
+  if (response.visibility === "public") response.invitations = response.invitations.filter((invitation) => Boolean(invitation.user_id));
   return NextResponse.json(response, { headers: { "Cache-Control": "no-store" } });
 }
 

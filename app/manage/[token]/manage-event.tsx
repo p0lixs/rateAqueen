@@ -93,7 +93,7 @@ export default function ManageEvent({ token }: { token: string }) {
         <p className="eyebrow">Panel de organizadora</p>
         <h2>{data.title}</h2>
         <span className="room-kind">{data.visibility === "public" ? <><Globe2 size={13} /> Sala pública</> : <><LockKeyhole size={13} /> Sala privada</>}</span>
-        <p className="lede">Comparte cada enlace con su persona y añade nuevas participantes mientras la sala siga abierta. Tú decides cuándo cerrar y publicar el resultado.</p>
+        <p className="lede">{data.visibility === "public" ? "Comparte el enlace global o deja que encuentren la sala en el buscador. Aquí aparecerán las personas que se unan." : "Comparte cada enlace con su persona y añade nuevas participantes mientras la sala siga abierta. Tú decides cuándo cerrar y publicar el resultado."}</p>
       </section>
       <div className="stat-grid">
         <div className="stat"><strong>{cast}/{data.invitations.length}</strong><span>votos recibidos</span></div>
@@ -106,7 +106,7 @@ export default function ManageEvent({ token }: { token: string }) {
         <button className="btn btn-soft" onClick={copyPublicLink}>{copied === "public" ? <Check size={15} /> : <Copy size={15} />} {copied === "public" ? "Copiado" : "Copiar enlace"}</button>
       </section>}
 
-      {data.status === "voting" && <section className="card add-participant-card">
+      {data.status === "voting" && data.visibility === "private" && <section className="card add-participant-card">
         <div className="section-title"><h3>Añadir participante</h3><span className="count">La sala seguirá abierta</span></div>
         <form className="add-participant" onSubmit={addParticipant}>
           <input className="input" placeholder="Nombre" value={newName} onChange={(event) => setNewName(event.target.value)} required maxLength={60} />
@@ -116,11 +116,12 @@ export default function ManageEvent({ token }: { token: string }) {
       </section>}
 
       <section className="card">
-        <div className="section-title"><h3>Enlaces personales</h3><button className="icon-btn" onClick={load} aria-label="Actualizar"><RefreshCw size={17} /></button></div>
+        <div className="section-title"><h3>{data.visibility === "public" ? "Miembros" : "Enlaces personales"}</h3><button className="icon-btn" onClick={load} aria-label="Actualizar"><RefreshCw size={17} /></button></div>
+        {data.invitations.length === 0 && <div className="empty-state">{data.visibility === "public" ? "Todavía no se ha unido nadie." : "No hay participantes."}</div>}
         {data.invitations.map((invitation) => (
           <div className="invite" key={invitation.token}>
             <div><strong>{invitation.nickname}</strong><small>{invitation.name} · <span className={`status-dot ${invitation.has_voted ? "done" : ""}`} />{invitation.has_voted ? "Ya ha votado" : "Pendiente"}</small></div>
-            <button className="btn btn-soft" onClick={() => copyLink(invitation.token)}>{copied === invitation.token ? <Check size={15} /> : <Copy size={15} />} {copied === invitation.token ? "Copiado" : "Copiar"}</button>
+            {data.visibility === "private" && <button className="btn btn-soft" onClick={() => copyLink(invitation.token)}>{copied === invitation.token ? <Check size={15} /> : <Copy size={15} />} {copied === invitation.token ? "Copiado" : "Copiar"}</button>}
           </div>
         ))}
       </section>

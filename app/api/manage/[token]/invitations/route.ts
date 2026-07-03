@@ -12,9 +12,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: event, error } = await supabase.from("events").select("id,status").eq("admin_token", token).single();
+  const { data: event, error } = await supabase.from("events").select("id,status,visibility").eq("admin_token", token).single();
   if (error || !event) return NextResponse.json({ error: "Enlace de administración no válido" }, { status: 404 });
   if (event.status !== "voting") return NextResponse.json({ error: "La votación ya está cerrada" }, { status: 409 });
+  if (event.visibility === "public") return NextResponse.json({ error: "En una sala pública los miembros deben unirse mediante el enlace global" }, { status: 409 });
 
   const { count } = await supabase.from("invitations").select("id", { count: "exact", head: true }).eq("event_id", event.id);
   if ((count || 0) >= 100) return NextResponse.json({ error: "La sala ya tiene el máximo de 100 participantes" }, { status: 400 });
