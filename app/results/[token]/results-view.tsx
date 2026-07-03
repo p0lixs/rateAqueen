@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Crown, Trophy } from "lucide-react";
 import type { Result } from "@/lib/types";
+import SiteHeader from "@/components/site-header";
 
 export default function ResultsView({ token }: { token: string }) {
   const [data, setData] = useState<{ title: string; votes: number; results: Result[] } | null>(null);
@@ -14,11 +15,11 @@ export default function ResultsView({ token }: { token: string }) {
       else setData(json);
     });
   }, [token]);
-  if (error) return <main className="shell"><div className="notice error">{error}</div></main>;
+  if (error) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   return (
     <main className="shell">
-      <div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div>
+      <SiteHeader />
       <section className="vote-head"><p className="eyebrow"><Trophy size={13} /> Clasificación final</p><h1>{data.title}</h1><p className="lede">Resultado calculado con {data.votes} votos anónimos.</p></section>
       <div className="podium">
         {data.results.map((queen, index) => (

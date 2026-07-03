@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Crown, ExternalLink, RefreshCw } from "lucide-react";
+import { Check, Copy, ExternalLink, RefreshCw } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import SiteHeader from "@/components/site-header";
 
 type AdminData = {
   title: string;
@@ -33,13 +34,13 @@ export default function ManageEvent({ token }: { token: string }) {
     setTimeout(() => setCopied(""), 1500);
   }
 
-  if (error) return <main className="shell"><div className="notice error">{error}</div></main>;
+  if (error) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   const cast = data.invitations.filter((item) => item.has_voted).length;
 
   return (
     <main className="shell">
-      <div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div>
+      <SiteHeader />
       <section className="hero">
         <p className="eyebrow">Panel de organizadora</p>
         <h2>{data.title}</h2>
