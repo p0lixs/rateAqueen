@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, ExternalLink, LockKeyhole, Plus, RefreshCw } from "lucide-react";
+import { Check, Copy, ExternalLink, LockKeyhole, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 
@@ -62,6 +62,17 @@ export default function ManageEvent({ token }: { token: string }) {
     setBusy(false);
   }
 
+  async function deleteRoom() {
+    if (!confirm("¿Eliminar esta sala definitivamente? Se borrarán sus participantes, votos y reinas. Esta acción no se puede deshacer.")) return;
+    setBusy(true); setActionError("");
+    const response = await fetch(`/api/manage/${token}`, { method: "DELETE" });
+    const json = await response.json();
+    if (!response.ok) {
+      setActionError(json.error || "No se pudo eliminar la sala");
+      setBusy(false);
+    } else window.location.href = "/";
+  }
+
   if (error) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   const cast = data.invitations.filter((item) => item.has_voted).length;
@@ -102,6 +113,10 @@ export default function ManageEvent({ token }: { token: string }) {
       {data.status === "voting" && <section className="close-panel">
         <div><strong>Cerrar y publicar</strong><p>La clasificación se calculará con los votos recibidos hasta ese momento.</p></div>
         <button className="btn btn-danger" onClick={closeVoting} disabled={busy}><LockKeyhole size={16} /> Cerrar votación</button>
+      </section>}
+      {data.status === "voting" && <section className="delete-panel">
+        <div><strong>Eliminar sala</strong><p>Borra permanentemente la sala y todos sus datos. No estará disponible después del cierre.</p></div>
+        <button className="btn btn-delete" onClick={deleteRoom} disabled={busy}><Trash2 size={16} /> Eliminar</button>
       </section>}
       <p className="privacy">Guarda esta página: es tu enlace privado de administración. No lo compartas con las participantes.</p>
     </main>

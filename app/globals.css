@@ -96,6 +96,10 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .btn-danger:hover { color: white; background: #a51f3b; }
 .close-panel { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 18px; padding: 18px 20px; border: 1px solid #f0c8d1; border-radius: 18px; background: rgba(255,244,246,.8); }
 .close-panel p { color: var(--muted); font-size: .8rem; margin: 5px 0 0; }
+.delete-panel { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 12px; padding: 18px 20px; border: 1px dashed #d8cbd3; border-radius: 18px; }
+.delete-panel p { color: var(--muted); font-size: .8rem; margin: 5px 0 0; }
+.btn-delete { color: #9b1c31; background: transparent; border: 1px solid #e3b7c0; }
+.btn-delete:hover { color: white; background: #9b1c31; border-color: #9b1c31; }
 
 .podium { display: grid; gap: 12px; margin-top: 28px; }
 .result-row { display: grid; grid-template-columns: 40px 62px 1fr auto; gap: 12px; align-items: center; background: #fff; padding: 10px 14px 10px 10px; border-radius: 18px; border: 1px solid var(--line); }
@@ -145,4 +149,5 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
   .room-card > img, .room-placeholder { width: 70px; height: 70px; }
   .add-participant { grid-template-columns: 1fr; }
   .close-panel { align-items: stretch; flex-direction: column; }
+  .delete-panel { align-items: stretch; flex-direction: column; }
 }

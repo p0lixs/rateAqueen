@@ -30,3 +30,30 @@ export async function POST(_: Request, { params }: { params: Promise<{ token: st
   if (updateError) return NextResponse.json({ error: "No se pudo cerrar la votación" }, { status: 500 });
   return NextResponse.json({ status: "results" });
 }
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const supabase = getSupabaseAdmin();
+  const { data: deleted, error } = await supabase
+    .from("events")
+    .delete()
+    .eq("admin_token", token)
+    .eq("status", "voting")
+    .select("id")
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: "No se pudo eliminar la sala" }, { status: 500 });
+  if (!deleted) {
+    const { data: event } = await supabase.from("events").select("status").eq("admin_token", token).maybeSingle();
+    if (event?.status === "results") return NextResponse.json({ error: "Una sala cerrada y publicada no se puede eliminar" }, { status: 409 });
+    return NextResponse.json({ error: "La sala no existe" }, { status: 404 });
+  }
+
+  const { data: files } = await supabase.storage.from("queen-images").list(deleted.id, { limit: 100 });
+  if (files?.length) {
+    const paths = files.map((file) => `${deleted.id}/${file.name}`);
+    const { error: storageError } = await supabase.storage.from("queen-images").remove(paths);
+    if (storageError) console.error("No se pudieron limpiar algunas imágenes de la sala", storageError);
+  }
+  return NextResponse.json({ deleted: true });
+}
