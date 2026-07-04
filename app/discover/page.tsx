@@ -25,7 +25,7 @@ export default function DiscoverPage() {
   useEffect(() => { search(); }, []);
 
   return <main className="shell wide"><SiteHeader />
-    <section className="dashboard-head"><div><p className="eyebrow">Explorar</p><h2>Salas públicas</h2><p className="lede">Encuentra rankings abiertos y únete con tu cuenta.</p></div></section>
+    <section className="dashboard-head"><div><p className="eyebrow">Explorar</p><h2>Salas públicas abiertas</h2><p className="lede">Encuentra rankings en curso y únete con tu cuenta.</p></div></section>
     <form className="search-bar" onSubmit={search}><Search size={19} /><input placeholder="Buscar por nombre…" value={query} onChange={(event) => setQuery(event.target.value)} /><button className="btn btn-dark">Buscar</button></form>
     {error && <div className="notice error">{error}</div>}
     {loading ? <div className="spinner" /> : rooms.length === 0 ? <div className="empty-state">No hay salas públicas que coincidan.</div> : <div className="room-grid discover-grid">{rooms.map((room) => <a className="room-card" href={room.href} key={room.href}>

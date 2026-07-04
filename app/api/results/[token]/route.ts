@@ -8,22 +8,27 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   let eventId: string | undefined;
   let title: string | undefined;
   let status: string | undefined;
+  let invitationId: string | undefined;
+  let accessedAsAdmin = false;
 
   const { data: adminEvent } = await supabase.from("events").select("id,title,status").eq("admin_token", token).maybeSingle();
-  if (adminEvent) ({ id: eventId, title, status } = adminEvent);
+  if (adminEvent) { ({ id: eventId, title, status } = adminEvent); accessedAsAdmin = true; }
   else {
-    const { data: invitation } = await supabase.from("invitations").select("event_id,user_id,events(title,status,visibility)").eq("token", token).maybeSingle();
+    const { data: invitation } = await supabase.from("invitations").select("id,event_id,user_id,events(title,status,visibility)").eq("token", token).maybeSingle();
     const event = invitation && (Array.isArray(invitation.events) ? invitation.events[0] : invitation.events);
     if (invitation && event) {
       if (event.visibility === "public") {
         const user = await getUserFromRequest(request);
         if (!user || invitation.user_id !== user.id) return NextResponse.json({ error: "Debes iniciar sesión con la cuenta miembro de esta sala" }, { status: 401 });
       }
-      eventId = invitation.event_id; title = event.title; status = event.status;
+      eventId = invitation.event_id; invitationId = invitation.id; title = event.title; status = event.status;
     }
   }
   if (!eventId) return NextResponse.json({ error: "Enlace no válido" }, { status: 404 });
-  if (status !== "results") return NextResponse.json({ error: "La clasificación se publicará cuando vote todo el grupo" }, { status: 403 });
+  if (status !== "results") return NextResponse.json({ error: "La clasificación se publicará cuando la administradora cierre la sala" }, { status: 403 });
+
+  if (accessedAsAdmin) await supabase.from("events").update({ owner_results_viewed_at: new Date().toISOString() }).eq("id", eventId);
+  else if (invitationId) await supabase.from("invitations").update({ results_viewed_at: new Date().toISOString() }).eq("id", invitationId);
 
   const [{ data: queens }, { data: ballots }] = await Promise.all([
     supabase.from("queens").select("id,name,image_url").eq("event_id", eventId),

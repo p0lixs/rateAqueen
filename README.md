@@ -30,6 +30,8 @@ Finalmente, ejecuta [`supabase/migrations/004_manual_close.sql`](supabase/migrat
 
 Para añadir salas públicas, ejecuta [`supabase/migrations/005_public_rooms.sql`](supabase/migrations/005_public_rooms.sql) después de la migración 004.
 
+Para activar las pestañas de estado y los avisos de resultados nuevos, ejecuta [`supabase/migrations/006_result_notifications.sql`](supabase/migrations/006_result_notifications.sql) después de la migración 005.
+
 4. Instala y ejecuta:
 
 ```bash

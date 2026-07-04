@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, ExternalLink, Globe2, LockKeyhole, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
+import ConfirmModal from "@/components/confirm-modal";
 
 type AdminData = {
   title: string;
@@ -21,6 +22,7 @@ export default function ManageEvent({ token }: { token: string }) {
   const [newNickname, setNewNickname] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [pendingAction, setPendingAction] = useState<"close" | "delete" | null>(null);
 
   const load = useCallback(async () => {
     const { data: { session } } = await getSupabaseBrowser().auth.getSession();
@@ -62,22 +64,22 @@ export default function ManageEvent({ token }: { token: string }) {
   }
 
   async function closeVoting() {
-    if (!confirm("¿Cerrar la votación y publicar la clasificación? Después no podrás añadir participantes ni recibir más votos.")) return;
     setBusy(true); setActionError("");
     const response = await fetch(`/api/manage/${token}`, { method: "POST" });
     const json = await response.json();
     if (!response.ok) setActionError(json.error || "No se pudo cerrar la votación");
     else await load();
+    setPendingAction(null);
     setBusy(false);
   }
 
   async function deleteRoom() {
-    if (!confirm("¿Eliminar esta sala definitivamente? Se borrarán sus participantes, votos y reinas. Esta acción no se puede deshacer.")) return;
     setBusy(true); setActionError("");
     const response = await fetch(`/api/manage/${token}`, { method: "DELETE" });
     const json = await response.json();
     if (!response.ok) {
       setActionError(json.error || "No se pudo eliminar la sala");
+      setPendingAction(null);
       setBusy(false);
     } else window.location.href = "/";
   }
@@ -128,12 +130,14 @@ export default function ManageEvent({ token }: { token: string }) {
       {actionError && <div className="notice error">{actionError}</div>}
       {data.status === "voting" && <section className="close-panel">
         <div><strong>Cerrar y publicar</strong><p>La clasificación se calculará con los votos recibidos hasta ese momento.</p></div>
-        <button className="btn btn-danger" onClick={closeVoting} disabled={busy}><LockKeyhole size={16} /> Cerrar votación</button>
+        <button className="btn btn-danger" onClick={() => setPendingAction("close")} disabled={busy}><LockKeyhole size={16} /> Cerrar votación</button>
       </section>}
       {data.status === "voting" && <section className="delete-panel">
         <div><strong>Eliminar sala</strong><p>Borra permanentemente la sala y todos sus datos. No estará disponible después del cierre.</p></div>
-        <button className="btn btn-delete" onClick={deleteRoom} disabled={busy}><Trash2 size={16} /> Eliminar</button>
+        <button className="btn btn-delete" onClick={() => setPendingAction("delete")} disabled={busy}><Trash2 size={16} /> Eliminar</button>
       </section>}
+      <ConfirmModal open={pendingAction === "close"} title="¿Cerrar la votación?" description="Se publicará la clasificación con los votos actuales. Después no se admitirán más participantes ni votos." confirmLabel="Cerrar y publicar" loading={busy} onConfirm={closeVoting} onClose={() => setPendingAction(null)} />
+      <ConfirmModal open={pendingAction === "delete"} title="¿Eliminar esta sala?" description="Se borrarán permanentemente sus participantes, votos, reinas e imágenes. Esta acción no se puede deshacer." confirmLabel="Eliminar sala" tone="danger" loading={busy} onConfirm={deleteRoom} onClose={() => setPendingAction(null)} />
       <p className="privacy">Guarda esta página: es tu enlace privado de administración. No lo compartas con las participantes.</p>
     </main>
   );

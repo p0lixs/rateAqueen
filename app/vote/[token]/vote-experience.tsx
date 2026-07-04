@@ -4,10 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Crown, GripVertical, LockKeyhole, Send } from "lucide-react";
+import { Crown, GripVertical, Hourglass, LockKeyhole, Send } from "lucide-react";
 import type { EventInfo, Queen } from "@/lib/types";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
+import ConfirmModal from "@/components/confirm-modal";
 
 function SortableQueen({ queen, index }: { queen: Queen; index: number }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: queen.id });
@@ -26,6 +27,7 @@ export default function VoteExperience({ token }: { token: string }) {
   const [queens, setQueens] = useState<Queen[]>([]);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } }),
@@ -44,6 +46,11 @@ export default function VoteExperience({ token }: { token: string }) {
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!data?.voter.has_voted || data.status !== "voting") return;
+    const interval = window.setInterval(load, 12_000);
+    return () => window.clearInterval(interval);
+  }, [data?.voter.has_voted, data?.status, load]);
 
   function dragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -53,7 +60,6 @@ export default function VoteExperience({ token }: { token: string }) {
   }
 
   async function submit() {
-    if (!confirm("¿Enviar este orden? Después no podrás cambiarlo.")) return;
     setSending(true);
     setError("");
     const { data: { session } } = await getSupabaseBrowser().auth.getSession();
@@ -65,10 +71,12 @@ export default function VoteExperience({ token }: { token: string }) {
     const json = await response.json();
     if (!response.ok) {
       setError(json.error || "No se pudo guardar el voto");
+      setConfirming(false);
       return setSending(false);
     }
     if (json.status === "results") window.location.href = `/results/${token}`;
     else await load();
+    setConfirming(false);
     setSending(false);
   }
 
@@ -78,7 +86,7 @@ export default function VoteExperience({ token }: { token: string }) {
     return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Sashay, results</p><h2>Votación cerrada</h2><p className="lede">La clasificación final está lista.</p><a className="btn btn-primary" href={`/results/${token}`}>Ver clasificación</a></section></main>;
   }
   if (data.voter.has_voted) {
-    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Voto recibido</p><h2>Gracias, {data.voter.nickname}</h2><p className="lede">Tu orden se ha guardado de forma anónima. La administradora publicará el resultado cuando cierre la votación.</p><div className="progress">{data.votes_cast} de {data.votes_total} votos recibidos</div><button className="btn btn-primary" onClick={load}>Comprobar resultados</button></section></main>;
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Voto recibido</p><h2>Gracias, {data.voter.nickname}</h2><p className="lede">Tu orden se ha guardado de forma anónima. La administradora publicará el resultado cuando cierre la votación.</p><div className="progress">{data.votes_cast} de {data.votes_total} votos recibidos</div><button className="btn btn-primary waiting-button" disabled aria-live="polite"><Hourglass size={17} /> Esperando a que cierre la sala</button><p className="auto-check">Comprobaremos automáticamente si ya se han publicado los resultados.</p></section></main>;
   }
 
   return (
@@ -95,8 +103,9 @@ export default function VoteExperience({ token }: { token: string }) {
         </SortableContext>
       </DndContext>
       {error && <div className="notice error">{error}</div>}
-      <button className="btn btn-primary" onClick={submit} disabled={sending}><Send size={17} /> {sending ? "Enviando…" : "Confirmar mi ranking"}</button>
+      <button className="btn btn-primary" onClick={() => setConfirming(true)} disabled={sending}><Send size={17} /> {sending ? "Enviando…" : "Confirmar mi ranking"}</button>
       <p className="privacy"><LockKeyhole size={13} /> Tu identidad y tu ranking se guardan por separado. Nadie podrá consultar cómo has ordenado a las reinas.</p>
+      <ConfirmModal open={confirming} title="¿Enviar tu ranking?" description="Comprueba el orden antes de continuar. Después de enviarlo no podrás modificarlo." confirmLabel="Enviar ranking" loading={sending} onConfirm={submit} onClose={() => setConfirming(false)} />
     </main>
   );
 }

@@ -9,6 +9,7 @@ create table public.events (
   public_token text unique,
   owner_id uuid references auth.users(id) on delete set null,
   status text not null default 'voting' check (status in ('voting', 'results')),
+  owner_results_viewed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -29,6 +30,7 @@ create table public.invitations (
   token text not null unique,
   has_voted boolean not null default false,
   voted_at timestamptz,
+  results_viewed_at timestamptz,
   user_id uuid references auth.users(id) on delete set null
 );
 

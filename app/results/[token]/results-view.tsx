@@ -14,7 +14,7 @@ export default function ResultsView({ token }: { token: string }) {
       const json = await response.json();
       if (response.status === 401) return void (window.location.href = `/auth?next=${encodeURIComponent(`/results/${token}`)}`);
       if (!response.ok) setError(json.error || "No se pueden mostrar los resultados");
-      else setData(json);
+      else { setData(json); window.dispatchEvent(new Event("result-viewed")); }
     });
   }, [token]);
   if (error) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;

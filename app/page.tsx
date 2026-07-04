@@ -13,6 +13,7 @@ type Room = {
   votes_total: number;
   href: string;
   role: "owner" | "guest";
+  result_seen: boolean;
 };
 
 export default function Home() {
@@ -75,14 +76,24 @@ export default function Home() {
 }
 
 function RoomSection({ title, rooms, empty }: { title: string; rooms: Room[]; empty: string }) {
+  const [status, setStatus] = useState<"voting" | "results">("voting");
+  const openRooms = rooms.filter((room) => room.status === "voting");
+  const closedRooms = rooms.filter((room) => room.status === "results");
+  const unseen = closedRooms.filter((room) => !room.result_seen).length;
+  useEffect(() => {
+    if (rooms.length && !openRooms.length && closedRooms.length) setStatus("results");
+  }, [rooms.length, openRooms.length, closedRooms.length]);
+  const visibleRooms = status === "voting" ? openRooms : closedRooms;
   return <section className="room-section">
     <div className="section-title"><h3>{title}</h3><span className="count">{rooms.length} salas</span></div>
-    {rooms.length === 0 ? <div className="empty-state">{empty}</div> : <div className="room-grid">{rooms.map((room) => (
+    {rooms.length === 0 ? <div className="empty-state">{empty}</div> : <><div className="status-tabs"><button className={status === "voting" ? "active" : ""} onClick={() => setStatus("voting")}>Abiertas <span>{openRooms.length}</span></button><button className={status === "results" ? "active" : ""} onClick={() => setStatus("results")}>Resultados <span>{closedRooms.length}</span>{unseen > 0 && <b>{unseen}</b>}</button></div>
+    {visibleRooms.length === 0 ? <div className="empty-state compact">{status === "voting" ? "No hay salas abiertas." : "Todavía no hay resultados."}</div> : <div className="room-grid">{visibleRooms.map((room) => (
       <a className="room-card" href={room.href} key={room.href}>
         {room.image_url ? <img src={room.image_url} alt="" /> : <div className="room-placeholder"><Crown /></div>}
         <div className="room-body"><span className={`room-status ${room.status}`}>{room.status === "results" ? "Resultados" : "Votación abierta"}</span><h3>{room.title}</h3><p><Users size={14} /> {room.votes_cast} de {room.votes_total} votos</p></div>
         <ArrowRight className="room-arrow" size={19} />
+        {!room.result_seen && room.status === "results" && <span className="new-result-dot" aria-label="Resultado nuevo" />}
       </a>
-    ))}</div>}
+    ))}</div>}</>}
   </section>;
 }
