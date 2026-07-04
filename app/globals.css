@@ -114,6 +114,8 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .btn-delete:hover { color: white; background: #9b1c31; border-color: #9b1c31; }
 
 .podium { display: grid; gap: 12px; margin-top: 28px; }
+.share-result-button { width: 100%; color: white; background: linear-gradient(105deg, #7d29d8, #f02d80 55%, #ff7a38); box-shadow: 0 12px 30px rgba(240,45,128,.24); }
+.share-result-button:hover { filter: brightness(1.05); }
 .result-row { display: grid; grid-template-columns: 40px 62px 1fr auto; gap: 12px; align-items: center; background: #fff; padding: 10px 14px 10px 10px; border-radius: 18px; border: 1px solid var(--line); }
 .result-row:first-child { border-color: #e1bd54; background: linear-gradient(100deg,#fff8dd,#fff); }
 .score { text-align: right; }
