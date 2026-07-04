@@ -3,7 +3,7 @@ import type { Result } from "@/lib/types";
 const WIDTH = 1080;
 const HEIGHT = 1350;
 
-export async function createResultCard(title: string, votes: number, results: Result[]) {
+export async function createResultCard(title: string, votes: number, results: Result[], language: "es" | "en" = "es") {
   await document.fonts?.ready;
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
@@ -31,7 +31,7 @@ export async function createResultCard(title: string, votes: number, results: Re
   ctx.fillStyle = "#ff4d9c";
   ctx.font = "700 25px 'DM Sans', sans-serif";
   ctx.letterSpacing = "5px";
-  ctx.fillText("RATE A QUEEN · FINAL RESULTS", 70, 82);
+  ctx.fillText(language === "en" ? "RATE A QUEEN · FINAL RESULTS" : "RATE A QUEEN · RESULTADOS", 70, 82);
   ctx.letterSpacing = "0px";
 
   ctx.fillStyle = "#fffaf3";
@@ -41,7 +41,7 @@ export async function createResultCard(title: string, votes: number, results: Re
   const headerBottom = 180 + titleLines.length * 70;
   ctx.fillStyle = "rgba(255,255,255,.68)";
   ctx.font = "500 25px 'DM Sans', sans-serif";
-  ctx.fillText(`${votes} votos anónimos · clasificación final`, 72, headerBottom);
+  ctx.fillText(language === "en" ? `${votes} anonymous votes · final ranking` : `${votes} votos anónimos · clasificación final`, 72, headerBottom);
 
   const winner = results[0];
   if (winner) {
@@ -54,10 +54,10 @@ export async function createResultCard(title: string, votes: number, results: Re
     ctx.strokeStyle = "rgba(255,225,125,.55)"; ctx.lineWidth = 2; ctx.stroke();
 
     await drawPortrait(ctx, winner.image_url, 85, top + 32, 200, 200, "#f7c85c");
-    ctx.fillStyle = "#ffd86b"; ctx.font = "800 24px 'DM Sans', sans-serif"; ctx.fillText("THE WINNER", 320, top + 65);
+    ctx.fillStyle = "#ffd86b"; ctx.font = "800 24px 'DM Sans', sans-serif"; ctx.fillText(language === "en" ? "THE WINNER" : "LA GANADORA", 320, top + 65);
     ctx.fillStyle = "#fff"; ctx.font = "700 52px 'Playfair Display', serif"; ctx.fillText(trimText(ctx, winner.name, 620), 320, top + 128);
-    ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.font = "500 24px 'DM Sans', sans-serif"; ctx.fillText(`${winner.average.toFixed(2)} puntos de media`, 320, top + 174);
-    ctx.fillStyle = "#ffd86b"; ctx.font = "700 25px 'DM Sans', sans-serif"; ctx.fillText(`${winner.first_places} primeros puestos`, 320, top + 215);
+    ctx.fillStyle = "rgba(255,255,255,.72)"; ctx.font = "500 24px 'DM Sans', sans-serif"; ctx.fillText(language === "en" ? `${winner.average.toFixed(2)} average points` : `${winner.average.toFixed(2)} puntos de media`, 320, top + 174);
+    ctx.fillStyle = "#ffd86b"; ctx.font = "700 25px 'DM Sans', sans-serif"; ctx.fillText(language === "en" ? `${winner.first_places} first places` : `${winner.first_places} primeros puestos`, 320, top + 215);
   }
 
   const listTop = headerBottom + 337;
@@ -75,7 +75,7 @@ export async function createResultCard(title: string, votes: number, results: Re
   }
 
   if (results.length > 9) {
-    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.58)"; ctx.font = "600 21px 'DM Sans', sans-serif"; ctx.fillText(`+ ${results.length - 9} reinas más en rateaqueen.app`, WIDTH / 2, 1280); ctx.textAlign = "left";
+    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.58)"; ctx.font = "600 21px 'DM Sans', sans-serif"; ctx.fillText(language === "en" ? `+ ${results.length - 9} more queens at rateaqueen.app` : `+ ${results.length - 9} reinas más en rateaqueen.app`, WIDTH / 2, 1280); ctx.textAlign = "left";
   } else {
     ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.font = "600 21px 'DM Sans', sans-serif"; ctx.fillText("rateaqueen.app", 70, 1290);
   }

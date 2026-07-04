@@ -2,6 +2,8 @@
 
 Aplicación web móvil para crear rankings. Las salas privadas funcionan mediante invitaciones individuales y permiten votar sin cuenta. Las salas públicas aparecen en el buscador, tienen un enlace global y requieren registro para unirse, votar y consultar resultados. La organizadora prepara las reinas (con foto opcional), puede añadir participantes mientras la sala está abierta y decide cuándo cerrar para publicar la clasificación.
 
+La interfaz detecta el idioma principal del dispositivo: usa español para variantes `es-*` e inglés para cualquier otro idioma.
+
 ## Privacidad del voto
 
 La identidad y la papeleta se guardan en tablas distintas. Una invitación registra únicamente si ya se usó. La papeleta contiene el evento y el orden de las reinas, pero ningún identificador de invitación, nombre, apodo o fecha. El panel de organización nunca expone papeletas individuales.

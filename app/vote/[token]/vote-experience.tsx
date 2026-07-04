@@ -9,20 +9,23 @@ import type { EventInfo, Queen } from "@/lib/types";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 import ConfirmModal from "@/components/confirm-modal";
+import { useI18n } from "@/components/i18n-provider";
 
 function SortableQueen({ queen, index }: { queen: Queen; index: number }) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: queen.id });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={`queen-row ${isDragging ? "dragging" : ""}`}>
       <span className="rank">{index + 1}</span>
       {queen.image_url ? <img className="queen-photo" src={queen.image_url} alt={queen.name} /> : <span className="queen-photo queen-photo-empty"><Crown size={23} /></span>}
       <span className="queen-name">{queen.name}</span>
-      <button type="button" className="icon-btn drag-handle" aria-label={`Mover a ${queen.name}`} {...attributes} {...listeners}><GripVertical size={21} /></button>
+      <button type="button" className="icon-btn drag-handle" aria-label={t("moveQueen", { name: queen.name })} {...attributes} {...listeners}><GripVertical size={21} /></button>
     </div>
   );
 }
 
 export default function VoteExperience({ token }: { token: string }) {
+  const { t, error: translateError } = useI18n();
   const [data, setData] = useState<EventInfo | null>(null);
   const [queens, setQueens] = useState<Queen[]>([]);
   const [error, setError] = useState("");
@@ -40,7 +43,7 @@ export default function VoteExperience({ token }: { token: string }) {
     const response = await fetch(`/api/invitations/${token}`, { cache: "no-store", headers });
     const json = await response.json();
     if (response.status === 401) return void (window.location.href = `/auth?next=${encodeURIComponent(`/vote/${token}`)}`);
-    if (!response.ok) return setError(json.error || "Esta invitación no es válida");
+    if (!response.ok) return setError(translateError(json.error || "Esta invitación no es válida"));
     setData(json);
     setQueens(json.queens);
   }, [token]);
@@ -70,7 +73,7 @@ export default function VoteExperience({ token }: { token: string }) {
     });
     const json = await response.json();
     if (!response.ok) {
-      setError(json.error || "No se pudo guardar el voto");
+      setError(translateError(json.error || "No se pudo guardar el voto"));
       setConfirming(false);
       return setSending(false);
     }
@@ -83,19 +86,19 @@ export default function VoteExperience({ token }: { token: string }) {
   if (error && !data) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   if (data.status === "results") {
-    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Sashay, results</p><h2>Votación cerrada</h2><p className="lede">La clasificación final está lista.</p><a className="btn btn-primary" href={`/results/${token}`}>Ver clasificación</a></section></main>;
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">SASHAY, RESULTS</p><h2>{t("votingClosed")}</h2><p className="lede">{t("rankingReady")}</p><a className="btn btn-primary" href={`/results/${token}`}>{t("viewRanking")}</a></section></main>;
   }
   if (data.voter.has_voted) {
-    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">Voto recibido</p><h2>Gracias, {data.voter.nickname}</h2><p className="lede">Tu orden se ha guardado de forma anónima. La administradora publicará el resultado cuando cierre la votación.</p><div className="progress">{data.votes_cast} de {data.votes_total} votos recibidos</div><button className="btn btn-primary waiting-button" disabled aria-live="polite"><Hourglass size={17} /> Esperando a que cierre la sala</button><p className="auto-check">Comprobaremos automáticamente si ya se han publicado los resultados.</p></section></main>;
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">{t("voteReceived")}</p><h2>{t("thanks", { name: data.voter.nickname })}</h2><p className="lede">{t("savedAnonymous")}</p><div className="progress">{data.votes_cast}/{data.votes_total}</div><button className="btn btn-primary waiting-button" disabled aria-live="polite"><Hourglass size={17} /> {t("waitingClose")}</button><p className="auto-check">{t("autoCheck")}</p></section></main>;
   }
 
   return (
     <main className="shell">
       <SiteHeader />
       <section className="vote-head">
-        <p className="eyebrow">Hola, {data.voter.nickname}</p>
+        <p className="eyebrow">{t("hello", { name: data.voter.nickname })}</p>
         <h1>{data.title}</h1>
-        <p className="lede">Arrastra las reinas de mejor a peor. La primera recibirá más puntos.</p>
+        <p className="lede">{t("voteLead")}</p>
       </section>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
         <SortableContext items={queens.map((queen) => queen.id)} strategy={verticalListSortingStrategy}>
@@ -103,9 +106,9 @@ export default function VoteExperience({ token }: { token: string }) {
         </SortableContext>
       </DndContext>
       {error && <div className="notice error">{error}</div>}
-      <button className="btn btn-primary" onClick={() => setConfirming(true)} disabled={sending}><Send size={17} /> {sending ? "Enviando…" : "Confirmar mi ranking"}</button>
-      <p className="privacy"><LockKeyhole size={13} /> Tu identidad y tu ranking se guardan por separado. Nadie podrá consultar cómo has ordenado a las reinas.</p>
-      <ConfirmModal open={confirming} title="¿Enviar tu ranking?" description="Comprueba el orden antes de continuar. Después de enviarlo no podrás modificarlo." confirmLabel="Enviar ranking" loading={sending} onConfirm={submit} onClose={() => setConfirming(false)} />
+      <button className="btn btn-primary" onClick={() => setConfirming(true)} disabled={sending}><Send size={17} /> {sending ? t("sending") : t("confirmRanking")}</button>
+      <p className="privacy"><LockKeyhole size={13} /> {t("privacyVote")}</p>
+      <ConfirmModal open={confirming} title={t("submitTitle")} description={t("submitText")} confirmLabel={t("submitAction")} loading={sending} onConfirm={submit} onClose={() => setConfirming(false)} />
     </main>
   );
 }

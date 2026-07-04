@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRight, Compass, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { useI18n } from "@/components/i18n-provider";
 
 type Room = {
   title: string;
@@ -17,6 +18,7 @@ type Room = {
 };
 
 export default function Home() {
+  const { t, error: translateError } = useI18n();
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [rooms, setRooms] = useState<{ created: Room[]; invited: Room[] }>({ created: [], invited: [] });
   const [error, setError] = useState("");
@@ -29,7 +31,7 @@ export default function Home() {
     if (!session) return;
     const response = await fetch("/api/dashboard", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
     const json = await response.json();
-    if (!response.ok) setError(json.error || "No se pudieron cargar las salas");
+    if (!response.ok) setError(translateError(json.error || "No se pudieron cargar las salas"));
     else setRooms(json);
   }, []);
 
@@ -53,29 +55,30 @@ export default function Home() {
       <div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div>
       <section className="hero landing-hero">
         <p className="eyebrow">The ranking game</p>
-        <h1>Que gane<br /><em>la mejor.</em></h1>
-        <p className="lede">Crea rankings privados, invita mediante enlaces únicos y publica el resultado cuando decidas cerrar la votación.</p>
-        <div className="hero-actions"><a className="btn btn-dark" href="/auth?mode=signup"><Sparkles size={17} /> Crear una cuenta</a><a className="btn btn-soft" href="/auth">Iniciar sesión</a></div>
-        <p className="guest-note"><DoorOpen size={15} /> ¿Te han invitado? No necesitas registrarte: abre directamente el enlace que has recibido.</p>
+        <h1>{t("mayBest")}<br /><em>{t("win")}</em></h1>
+        <p className="lede">{t("landingText")}</p>
+        <div className="hero-actions"><a className="btn btn-dark" href="/auth?mode=signup"><Sparkles size={17} /> {t("signUp")}</a><a className="btn btn-soft" href="/auth">{t("signIn")}</a></div>
+        <p className="guest-note"><DoorOpen size={15} /> {t("guestInvite")}</p>
       </section>
     </main>
   );
 
   return (
     <main className="shell wide">
-      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><button className="icon-btn" onClick={logout} title="Cerrar sesión"><LogOut size={19} /></button></div>
+      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><button className="icon-btn" onClick={logout} title={t("logout")}><LogOut size={19} /></button></div>
       <section className="dashboard-head">
-        <div><p className="eyebrow">Tu panel</p><h2>{view === "created" ? "Creadas por mí" : view === "joined" ? "Salas en las que participo" : "Mis salas"}</h2><p className="lede">{user.email}</p></div>
-        <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> Explorar públicas</a><a className="btn btn-dark" href="/create"><Plus size={17} /> Nueva sala</a></div>
+        <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{user.email}</p></div>
+        <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-dark" href="/create"><Plus size={17} /> {t("newRoom")}</a></div>
       </section>
       {error && <div className="notice error">{error}</div>}
-      {(view === "home" || view === "created") && <RoomSection title="Creadas por ti" rooms={rooms.created} empty="Todavía no has creado ninguna sala." />}
-      {(view === "home" || view === "joined") && <RoomSection title="Participas" rooms={rooms.invited} empty="Las salas a las que te unas o cuyas invitaciones abras aparecerán aquí." />}
+      {(view === "home" || view === "created") && <RoomSection title={t("createdByYou")} rooms={rooms.created} empty={t("noCreated")} />}
+      {(view === "home" || view === "joined") && <RoomSection title={t("participating")} rooms={rooms.invited} empty={t("noJoined")} />}
     </main>
   );
 }
 
 function RoomSection({ title, rooms, empty }: { title: string; rooms: Room[]; empty: string }) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<"voting" | "results">("voting");
   const openRooms = rooms.filter((room) => room.status === "voting");
   const closedRooms = rooms.filter((room) => room.status === "results");
@@ -85,14 +88,14 @@ function RoomSection({ title, rooms, empty }: { title: string; rooms: Room[]; em
   }, [rooms.length, openRooms.length, closedRooms.length]);
   const visibleRooms = status === "voting" ? openRooms : closedRooms;
   return <section className="room-section">
-    <div className="section-title"><h3>{title}</h3><span className="count">{rooms.length} salas</span></div>
-    {rooms.length === 0 ? <div className="empty-state">{empty}</div> : <><div className="status-tabs"><button className={status === "voting" ? "active" : ""} onClick={() => setStatus("voting")}>Abiertas <span>{openRooms.length}</span></button><button className={status === "results" ? "active" : ""} onClick={() => setStatus("results")}>Resultados <span>{closedRooms.length}</span>{unseen > 0 && <b>{unseen}</b>}</button></div>
-    {visibleRooms.length === 0 ? <div className="empty-state compact">{status === "voting" ? "No hay salas abiertas." : "Todavía no hay resultados."}</div> : <div className="room-grid">{visibleRooms.map((room) => (
+    <div className="section-title"><h3>{title}</h3><span className="count">{t("roomsCount", { count: rooms.length })}</span></div>
+    {rooms.length === 0 ? <div className="empty-state">{empty}</div> : <><div className="status-tabs"><button className={status === "voting" ? "active" : ""} onClick={() => setStatus("voting")}>{t("open")} <span>{openRooms.length}</span></button><button className={status === "results" ? "active" : ""} onClick={() => setStatus("results")}>{t("results")} <span>{closedRooms.length}</span>{unseen > 0 && <b>{unseen}</b>}</button></div>
+    {visibleRooms.length === 0 ? <div className="empty-state compact">{status === "voting" ? t("noOpen") : t("noResults")}</div> : <div className="room-grid">{visibleRooms.map((room) => (
       <a className="room-card" href={room.href} key={room.href}>
         {room.image_url ? <img src={room.image_url} alt="" /> : <div className="room-placeholder"><Crown /></div>}
-        <div className="room-body"><span className={`room-status ${room.status}`}>{room.status === "results" ? "Resultados" : "Votación abierta"}</span><h3>{room.title}</h3><p><Users size={14} /> {room.votes_cast} de {room.votes_total} votos</p></div>
+        <div className="room-body"><span className={`room-status ${room.status}`}>{room.status === "results" ? t("results") : t("votingOpen")}</span><h3>{room.title}</h3><p><Users size={14} /> {room.votes_cast}/{room.votes_total}</p></div>
         <ArrowRight className="room-arrow" size={19} />
-        {!room.result_seen && room.status === "results" && <span className="new-result-dot" aria-label="Resultado nuevo" />}
+        {!room.result_seen && room.status === "results" && <span className="new-result-dot" aria-label={t("newResult")} />}
       </a>
     ))}</div>}</>}
   </section>;

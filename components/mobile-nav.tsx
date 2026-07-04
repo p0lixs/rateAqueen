@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { Compass, House, PlusSquare, UsersRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { useI18n } from "@/components/i18n-provider";
 
 type Tab = "home" | "created" | "joined" | "discover";
 
 export default function MobileNav() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const [hash, setHash] = useState("");
   const [badges, setBadges] = useState({ created: 0, joined: 0 });
@@ -34,13 +36,13 @@ export default function MobileNav() {
   if (pathname === "/auth") return null;
   const active: Tab = pathname === "/discover" ? "discover" : pathname === "/" && hash === "#created" ? "created" : pathname === "/" && hash === "#joined" ? "joined" : pathname === "/" ? "home" : "home";
   const items: { tab: Tab; href: string; label: string; icon: typeof House }[] = [
-    { tab: "home", href: "/", label: "Inicio", icon: House },
-    { tab: "created", href: "/#created", label: "Creadas", icon: PlusSquare },
-    { tab: "joined", href: "/#joined", label: "Participo", icon: UsersRound },
-    { tab: "discover", href: "/discover", label: "Explorar", icon: Compass },
+    { tab: "home", href: "/", label: t("home"), icon: House },
+    { tab: "created", href: "/#created", label: t("created"), icon: PlusSquare },
+    { tab: "joined", href: "/#joined", label: t("joined"), icon: UsersRound },
+    { tab: "discover", href: "/discover", label: t("discover"), icon: Compass },
   ];
 
-  return <nav className="mobile-nav" aria-label="Navegación principal">{items.map((item) => {
+  return <nav className="mobile-nav" aria-label={t("navLabel")}>{items.map((item) => {
     const Icon = item.icon;
     const badge = item.tab === "created" ? badges.created : item.tab === "joined" ? badges.joined : 0;
     return <a key={item.tab} href={item.href} className={active === item.tab ? "active" : ""}><span className="nav-icon"><Icon size={21} />{badge > 0 && <b>{badge > 99 ? "99+" : badge}</b>}</span><span>{item.label}</span></a>;

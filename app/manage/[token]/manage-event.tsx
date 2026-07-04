@@ -5,6 +5,7 @@ import { Check, Copy, ExternalLink, Globe2, LockKeyhole, Plus, RefreshCw, Trash2
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 import ConfirmModal from "@/components/confirm-modal";
+import { useI18n } from "@/components/i18n-provider";
 
 type AdminData = {
   title: string;
@@ -15,6 +16,7 @@ type AdminData = {
 };
 
 export default function ManageEvent({ token }: { token: string }) {
+  const { t, error: translateError } = useI18n();
   const [data, setData] = useState<AdminData | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
@@ -29,7 +31,7 @@ export default function ManageEvent({ token }: { token: string }) {
     const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
     const response = await fetch(`/api/manage/${token}`, { cache: "no-store", headers });
     const json = await response.json();
-    if (!response.ok) return setError(json.error || "No se pudo abrir la partida");
+    if (!response.ok) return setError(translateError(json.error || "No se pudo abrir la partida"));
     setData(json);
   }, [token]);
 
@@ -58,7 +60,7 @@ export default function ManageEvent({ token }: { token: string }) {
       body: JSON.stringify({ name: newName, nickname: newNickname }),
     });
     const json = await response.json();
-    if (!response.ok) setActionError(json.error || "No se pudo añadir la participante");
+    if (!response.ok) setActionError(translateError(json.error || "No se pudo añadir la participante"));
     else { setNewName(""); setNewNickname(""); await load(); }
     setBusy(false);
   }
@@ -67,7 +69,7 @@ export default function ManageEvent({ token }: { token: string }) {
     setBusy(true); setActionError("");
     const response = await fetch(`/api/manage/${token}`, { method: "POST" });
     const json = await response.json();
-    if (!response.ok) setActionError(json.error || "No se pudo cerrar la votación");
+    if (!response.ok) setActionError(translateError(json.error || "No se pudo cerrar la votación"));
     else await load();
     setPendingAction(null);
     setBusy(false);
@@ -78,7 +80,7 @@ export default function ManageEvent({ token }: { token: string }) {
     const response = await fetch(`/api/manage/${token}`, { method: "DELETE" });
     const json = await response.json();
     if (!response.ok) {
-      setActionError(json.error || "No se pudo eliminar la sala");
+      setActionError(translateError(json.error || "No se pudo eliminar la sala"));
       setPendingAction(null);
       setBusy(false);
     } else window.location.href = "/";
@@ -92,53 +94,53 @@ export default function ManageEvent({ token }: { token: string }) {
     <main className="shell">
       <SiteHeader />
       <section className="hero">
-        <p className="eyebrow">Panel de organizadora</p>
+        <p className="eyebrow">{t("organizerPanel")}</p>
         <h2>{data.title}</h2>
-        <span className="room-kind">{data.visibility === "public" ? <><Globe2 size={13} /> Sala pública</> : <><LockKeyhole size={13} /> Sala privada</>}</span>
-        <p className="lede">{data.visibility === "public" ? "Comparte el enlace global o deja que encuentren la sala en el buscador. Aquí aparecerán las personas que se unan." : "Comparte cada enlace con su persona y añade nuevas participantes mientras la sala siga abierta. Tú decides cuándo cerrar y publicar el resultado."}</p>
+        <span className="room-kind">{data.visibility === "public" ? <><Globe2 size={13} /> {t("publicRoom")}</> : <><LockKeyhole size={13} /> {t("privateRoom")}</>}</span>
+        <p className="lede">{data.visibility === "public" ? t("publicManageLead") : t("privateManageLead")}</p>
       </section>
       <div className="stat-grid">
-        <div className="stat"><strong>{cast}/{data.invitations.length}</strong><span>votos recibidos</span></div>
-        <div className="stat"><strong>{data.status === "results" ? "Publicado" : "Abierto"}</strong><span>estado</span></div>
+        <div className="stat"><strong>{cast}/{data.invitations.length}</strong><span>{t("votesReceived")}</span></div>
+        <div className="stat"><strong>{data.status === "results" ? t("published") : t("open")}</strong><span>{t("state")}</span></div>
       </div>
-      {data.status === "results" && <a className="btn btn-primary" href={`/results/${token}`}><ExternalLink size={17} /> Ver clasificación final</a>}
+      {data.status === "results" && <a className="btn btn-primary" href={`/results/${token}`}><ExternalLink size={17} /> {t("viewFinal")}</a>}
 
       {data.visibility === "public" && data.public_token && <section className="card public-link-card">
-        <div><p className="eyebrow">Enlace global</p><h3>Una invitación para todo el mundo</h3><p>Las personas con cuenta podrán abrirlo, unirse y votar.</p></div>
-        <button className="btn btn-soft" onClick={copyPublicLink}>{copied === "public" ? <Check size={15} /> : <Copy size={15} />} {copied === "public" ? "Copiado" : "Copiar enlace"}</button>
+        <div><p className="eyebrow">{t("globalLink")}</p><h3>{t("oneInviteEveryone")}</h3><p>{t("publicLinkHelp")}</p></div>
+        <button className="btn btn-soft" onClick={copyPublicLink}>{copied === "public" ? <Check size={15} /> : <Copy size={15} />} {copied === "public" ? t("copied") : t("copyLink")}</button>
       </section>}
 
       {data.status === "voting" && data.visibility === "private" && <section className="card add-participant-card">
-        <div className="section-title"><h3>Añadir participante</h3><span className="count">La sala seguirá abierta</span></div>
+        <div className="section-title"><h3>{t("addParticipant")}</h3><span className="count">{t("roomStaysOpen")}</span></div>
         <form className="add-participant" onSubmit={addParticipant}>
-          <input className="input" placeholder="Nombre" value={newName} onChange={(event) => setNewName(event.target.value)} required maxLength={60} />
-          <input className="input" placeholder="Apodo" value={newNickname} onChange={(event) => setNewNickname(event.target.value)} required maxLength={60} />
-          <button className="btn btn-soft" disabled={busy}><Plus size={16} /> Añadir</button>
+          <input className="input" placeholder={t("name")} value={newName} onChange={(event) => setNewName(event.target.value)} required maxLength={60} />
+          <input className="input" placeholder={t("nickname")} value={newNickname} onChange={(event) => setNewNickname(event.target.value)} required maxLength={60} />
+          <button className="btn btn-soft" disabled={busy}><Plus size={16} /> {t("add")}</button>
         </form>
       </section>}
 
       <section className="card">
-        <div className="section-title"><h3>{data.visibility === "public" ? "Miembros" : "Enlaces personales"}</h3><button className="icon-btn" onClick={load} aria-label="Actualizar"><RefreshCw size={17} /></button></div>
-        {data.invitations.length === 0 && <div className="empty-state">{data.visibility === "public" ? "Todavía no se ha unido nadie." : "No hay participantes."}</div>}
+        <div className="section-title"><h3>{data.visibility === "public" ? t("members") : t("personalLinks")}</h3><button className="icon-btn" onClick={load} aria-label={t("refresh")}><RefreshCw size={17} /></button></div>
+        {data.invitations.length === 0 && <div className="empty-state">{data.visibility === "public" ? t("noMembers") : t("noParticipants")}</div>}
         {data.invitations.map((invitation) => (
           <div className="invite" key={invitation.token}>
-            <div><strong>{invitation.nickname}</strong><small>{invitation.name} · <span className={`status-dot ${invitation.has_voted ? "done" : ""}`} />{invitation.has_voted ? "Ya ha votado" : "Pendiente"}</small></div>
-            {data.visibility === "private" && <button className="btn btn-soft" onClick={() => copyLink(invitation.token)}>{copied === invitation.token ? <Check size={15} /> : <Copy size={15} />} {copied === invitation.token ? "Copiado" : "Copiar"}</button>}
+            <div><strong>{invitation.nickname}</strong><small>{invitation.name} · <span className={`status-dot ${invitation.has_voted ? "done" : ""}`} />{invitation.has_voted ? t("alreadyVoted") : t("pending")}</small></div>
+            {data.visibility === "private" && <button className="btn btn-soft" onClick={() => copyLink(invitation.token)}>{copied === invitation.token ? <Check size={15} /> : <Copy size={15} />} {copied === invitation.token ? t("copied") : t("copy")}</button>}
           </div>
         ))}
       </section>
       {actionError && <div className="notice error">{actionError}</div>}
       {data.status === "voting" && <section className="close-panel">
-        <div><strong>Cerrar y publicar</strong><p>La clasificación se calculará con los votos recibidos hasta ese momento.</p></div>
-        <button className="btn btn-danger" onClick={() => setPendingAction("close")} disabled={busy}><LockKeyhole size={16} /> Cerrar votación</button>
+        <div><strong>{t("closePublish")}</strong><p>{t("closePublishHelp")}</p></div>
+        <button className="btn btn-danger" onClick={() => setPendingAction("close")} disabled={busy}><LockKeyhole size={16} /> {t("closeVoting")}</button>
       </section>}
       {data.status === "voting" && <section className="delete-panel">
-        <div><strong>Eliminar sala</strong><p>Borra permanentemente la sala y todos sus datos. No estará disponible después del cierre.</p></div>
-        <button className="btn btn-delete" onClick={() => setPendingAction("delete")} disabled={busy}><Trash2 size={16} /> Eliminar</button>
+        <div><strong>{t("deleteRoom")}</strong><p>{t("deleteHelp")}</p></div>
+        <button className="btn btn-delete" onClick={() => setPendingAction("delete")} disabled={busy}><Trash2 size={16} /> {t("delete")}</button>
       </section>}
-      <ConfirmModal open={pendingAction === "close"} title="¿Cerrar la votación?" description="Se publicará la clasificación con los votos actuales. Después no se admitirán más participantes ni votos." confirmLabel="Cerrar y publicar" loading={busy} onConfirm={closeVoting} onClose={() => setPendingAction(null)} />
-      <ConfirmModal open={pendingAction === "delete"} title="¿Eliminar esta sala?" description="Se borrarán permanentemente sus participantes, votos, reinas e imágenes. Esta acción no se puede deshacer." confirmLabel="Eliminar sala" tone="danger" loading={busy} onConfirm={deleteRoom} onClose={() => setPendingAction(null)} />
-      <p className="privacy">Guarda esta página: es tu enlace privado de administración. No lo compartas con las participantes.</p>
+      <ConfirmModal open={pendingAction === "close"} title={t("confirmCloseTitle")} description={t("confirmCloseText")} confirmLabel={t("confirmCloseAction")} loading={busy} onConfirm={closeVoting} onClose={() => setPendingAction(null)} />
+      <ConfirmModal open={pendingAction === "delete"} title={t("confirmDeleteTitle")} description={t("confirmDeleteText")} confirmLabel={t("confirmDeleteAction")} tone="danger" loading={busy} onConfirm={deleteRoom} onClose={() => setPendingAction(null)} />
+      <p className="privacy">{t("keepAdminLink")}</p>
     </main>
   );
 }

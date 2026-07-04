@@ -3,8 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, Crown, LogIn, UserPlus } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { useI18n } from "@/components/i18n-provider";
 
 export default function AuthPage() {
+  const { t, language } = useI18n();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,12 +26,12 @@ export default function AuthPage() {
     const next = new URLSearchParams(window.location.search).get("next") || "/";
     if (mode === "signup") {
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}` } });
-      if (error) setError(translate(error.message));
+      if (error) setError(translate(error.message, language));
       else if (data.session) window.location.href = next;
-      else setMessage("Revisa tu correo y confirma la cuenta para poder entrar.");
+      else setMessage(t("confirmEmail"));
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(translate(error.message));
+      if (error) setError(translate(error.message, language));
       else window.location.href = next;
     }
     setLoading(false);
@@ -38,23 +40,23 @@ export default function AuthPage() {
   return <main className="shell auth-shell">
     <a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a>
     <section className="card auth-card">
-      <a className="back-link" href="/"><ArrowLeft size={15} /> Volver</a>
-      <p className="eyebrow">{mode === "login" ? "Bienvenida de nuevo" : "Únete al juego"}</p>
-      <h2>{mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2>
+      <a className="back-link" href="/"><ArrowLeft size={15} /> {t("back")}</a>
+      <p className="eyebrow">{mode === "login" ? t("welcomeBack") : t("joinGame")}</p>
+      <h2>{mode === "login" ? t("signIn") : t("createAccount")}</h2>
       <form onSubmit={submit}>
-        <div className="field"><label htmlFor="email">Email</label><input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></div>
-        <div className="field"><label htmlFor="password">Contraseña</label><input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete={mode === "login" ? "current-password" : "new-password"} /></div>
+        <div className="field"><label htmlFor="email">{t("email")}</label><input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></div>
+        <div className="field"><label htmlFor="password">{t("password")}</label><input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete={mode === "login" ? "current-password" : "new-password"} /></div>
         {error && <div className="notice error">{error}</div>}{message && <div className="notice">{message}</div>}
-        <button className="btn btn-primary" disabled={loading}>{mode === "login" ? <LogIn size={17} /> : <UserPlus size={17} />} {loading ? "Un momento…" : mode === "login" ? "Entrar" : "Registrarme"}</button>
+        <button className="btn btn-primary" disabled={loading}>{mode === "login" ? <LogIn size={17} /> : <UserPlus size={17} />} {loading ? t("working") : mode === "login" ? t("signIn") : t("registering")}</button>
       </form>
-      <button className="auth-switch" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setMessage(""); }}>{mode === "login" ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}</button>
+      <button className="auth-switch" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setMessage(""); }}>{mode === "login" ? t("noAccount") : t("hasAccount")}</button>
     </section>
   </main>;
 }
 
-function translate(message: string) {
-  if (message.includes("Invalid login")) return "Email o contraseña incorrectos.";
-  if (message.includes("already registered")) return "Ya existe una cuenta con este email.";
-  if (message.includes("Password should")) return "La contraseña debe tener al menos 6 caracteres.";
+function translate(message: string, language: "es" | "en" = "es") {
+  if (message.includes("Invalid login")) return language === "en" ? "Incorrect email or password." : "Email o contraseña incorrectos.";
+  if (message.includes("already registered")) return language === "en" ? "An account already exists with this email." : "Ya existe una cuenta con este email.";
+  if (message.includes("Password should")) return language === "en" ? "The password must have at least 6 characters." : "La contraseña debe tener al menos 6 caracteres.";
   return message;
 }
