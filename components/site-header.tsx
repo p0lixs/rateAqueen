@@ -4,7 +4,7 @@ export default function SiteHeader() {
   return (
     <div className="topbar">
       <a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a>
-      <a className="btn btn-soft" href="/"><House size={15} /> Inicio</a>
+      <a className="btn btn-soft desktop-home-link" href="/"><House size={15} /> Inicio</a>
     </div>
   );
 }

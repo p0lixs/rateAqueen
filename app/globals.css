@@ -151,9 +151,11 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .back-link { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); text-decoration: none; font-size: .82rem; margin-bottom: 30px; }
 .auth-switch { display: block; margin: 20px auto 0; border: 0; background: transparent; color: var(--pink-dark); font-weight: 700; font-size: .85rem; }
 .spinner { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--pink); border-radius: 50%; animation: spin .8s linear infinite; margin: 70px auto; }
+.mobile-nav { display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 480px) {
+  body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
   .shell { width: min(100% - 22px, 680px); padding-top: 22px; }
   .card { border-radius: 20px; padding: 18px; }
   .person-row { grid-template-columns: 1fr auto; }
@@ -173,4 +175,9 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
   .delete-panel { align-items: stretch; flex-direction: column; }
   .search-bar { border-radius: 17px; grid-template-columns: auto 1fr; }
   .search-bar .btn { grid-column: 1 / -1; }
+  .mobile-nav { position: fixed; z-index: 100; left: 8px; right: 8px; bottom: 8px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 7px 5px calc(7px + env(safe-area-inset-bottom)); border: 1px solid rgba(234,223,231,.95); border-radius: 22px; background: rgba(255,255,255,.94); box-shadow: 0 12px 40px rgba(42,21,36,.2); backdrop-filter: blur(14px); }
+  .mobile-nav a { display: grid; justify-items: center; gap: 3px; padding: 5px 2px; color: #93838e; text-decoration: none; font-size: .62rem; font-weight: 700; }
+  .mobile-nav a.active { color: var(--pink-dark); }
+  .mobile-nav a.active svg { stroke-width: 2.7; }
+  .desktop-home-link { display: none; }
 }

@@ -19,6 +19,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [rooms, setRooms] = useState<{ created: Room[]; invited: Room[] }>({ created: [], invited: [] });
   const [error, setError] = useState("");
+  const [view, setView] = useState<"home" | "created" | "joined">("home");
 
   const load = useCallback(async () => {
     const supabase = getSupabaseBrowser();
@@ -33,6 +34,10 @@ export default function Home() {
 
   useEffect(() => {
     load();
+    const updateView = () => setView(window.location.hash === "#created" ? "created" : window.location.hash === "#joined" ? "joined" : "home");
+    updateView();
+    window.addEventListener("hashchange", updateView);
+    return () => window.removeEventListener("hashchange", updateView);
   }, [load]);
 
   async function logout() {
@@ -59,12 +64,12 @@ export default function Home() {
     <main className="shell wide">
       <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><button className="icon-btn" onClick={logout} title="Cerrar sesión"><LogOut size={19} /></button></div>
       <section className="dashboard-head">
-        <div><p className="eyebrow">Tu panel</p><h2>Mis salas</h2><p className="lede">{user.email}</p></div>
+        <div><p className="eyebrow">Tu panel</p><h2>{view === "created" ? "Creadas por mí" : view === "joined" ? "Salas en las que participo" : "Mis salas"}</h2><p className="lede">{user.email}</p></div>
         <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> Explorar públicas</a><a className="btn btn-dark" href="/create"><Plus size={17} /> Nueva sala</a></div>
       </section>
       {error && <div className="notice error">{error}</div>}
-      <RoomSection title="Creadas por ti" rooms={rooms.created} empty="Todavía no has creado ninguna sala." />
-      <RoomSection title="Te han invitado" rooms={rooms.invited} empty="Las invitaciones que abras con tu sesión iniciada aparecerán aquí." />
+      {(view === "home" || view === "created") && <RoomSection title="Creadas por ti" rooms={rooms.created} empty="Todavía no has creado ninguna sala." />}
+      {(view === "home" || view === "joined") && <RoomSection title="Participas" rooms={rooms.invited} empty="Las salas a las que te unas o cuyas invitaciones abras aparecerán aquí." />}
     </main>
   );
 }
