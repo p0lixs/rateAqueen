@@ -124,7 +124,7 @@ export default function ManageEvent({ token }: { token: string }) {
         {data.invitations.length === 0 && <div className="empty-state">{data.visibility === "public" ? t("noMembers") : t("noParticipants")}</div>}
         {data.invitations.map((invitation) => (
           <div className="invite" key={invitation.token}>
-            <div><strong>{invitation.nickname}</strong><small>{invitation.name} · <span className={`status-dot ${invitation.has_voted ? "done" : ""}`} />{invitation.has_voted ? t("alreadyVoted") : t("pending")}</small></div>
+            <div><strong>{data.visibility === "public" ? invitation.name : invitation.nickname}</strong><small>{data.visibility === "private" && <>{invitation.name} · </>}<span className={`status-dot ${invitation.has_voted ? "done" : ""}`} />{invitation.has_voted ? t("alreadyVoted") : t("pending")}</small></div>
             {data.visibility === "private" && <button className="btn btn-soft" onClick={() => copyLink(invitation.token)}>{copied === invitation.token ? <Check size={15} /> : <Copy size={15} />} {copied === invitation.token ? t("copied") : t("copy")}</button>}
           </div>
         ))}

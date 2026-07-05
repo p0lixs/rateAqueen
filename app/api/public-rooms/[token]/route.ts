@@ -24,10 +24,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   const user = await getUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "Debes iniciar sesión" }, { status: 401 });
   const { token } = await params;
-  const { name, nickname } = await request.json() as { name?: string; nickname?: string };
+  const { name } = await request.json() as { name?: string };
   const cleanName = name?.trim();
-  const cleanNickname = nickname?.trim();
-  if (!cleanName || !cleanNickname || cleanName.length > 60 || cleanNickname.length > 60) return NextResponse.json({ error: "Introduce un nombre y un apodo válidos" }, { status: 400 });
+  if (!cleanName || cleanName.length > 60) return NextResponse.json({ error: "Introduce un nombre válido" }, { status: 400 });
 
   const supabase = getSupabaseAdmin();
   const { data: event } = await supabase.from("events").select("id,status").eq("public_token", token).eq("visibility", "public").maybeSingle();
@@ -39,7 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   if ((count || 0) >= 100) return NextResponse.json({ error: "La sala ha alcanzado el máximo de 100 miembros" }, { status: 409 });
 
   const invitationToken = createToken();
-  const { data, error } = await supabase.from("invitations").insert({ event_id: event.id, user_id: user.id, name: cleanName, nickname: cleanNickname, token: invitationToken }).select("token,has_voted").single();
+  const { data, error } = await supabase.from("invitations").insert({ event_id: event.id, user_id: user.id, name: cleanName, nickname: cleanName, token: invitationToken }).select("token,has_voted").single();
   if (error) {
     const { data: raced } = await supabase.from("invitations").select("token,has_voted").eq("event_id", event.id).eq("user_id", user.id).maybeSingle();
     if (raced) return NextResponse.json(raced);

@@ -12,7 +12,6 @@ export default function JoinPublicRoom({ token }: { token: string }) {
   const { t, error: translateError } = useI18n();
   const [data, setData] = useState<RoomData | null>(null);
   const [name, setName] = useState("");
-  const [nickname, setNickname] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +29,7 @@ export default function JoinPublicRoom({ token }: { token: string }) {
 
   async function join(event: FormEvent) {
     event.preventDefault(); setLoading(true); setError("");
-    const response = await fetch(`/api/public-rooms/${token}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ name, nickname }) });
+    const response = await fetch(`/api/public-rooms/${token}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ name }) });
     const json = await response.json();
     if (!response.ok) { setError(translateError(json.error || "No se pudo completar la unión")); setLoading(false); return; }
     window.location.href = `/vote/${json.token}`;
@@ -38,5 +37,5 @@ export default function JoinPublicRoom({ token }: { token: string }) {
   if (error && !data) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   if (data.membership) return <main className="shell"><SiteHeader /><section className="join-card card center">{data.image_url ? <img src={data.image_url} alt="" /> : <span className="join-image"><Crown /></span>}<p className="eyebrow">{t("alreadyMember")}</p><h2>{data.title}</h2><a className="btn btn-primary" href={data.status === "results" ? `/results/${data.membership.token}` : `/vote/${data.membership.token}`}>{data.status === "results" ? t("viewResults") : data.membership.has_voted ? t("viewStatus") : t("goVote")}</a></section></main>;
-  return <main className="shell"><SiteHeader /><section className="join-card card center">{data.image_url ? <img src={data.image_url} alt="" /> : <span className="join-image"><Crown /></span>}<p className="eyebrow">{t("publicRoomTag")}</p><h2>{data.title}</h2><p className="lede"><Users size={15} /> {t("membersVotes", { members: data.members, votes: data.votes_cast })}</p>{data.status === "results" ? <div className="notice">{t("closedNoMembers")}</div> : <form onSubmit={join}><div className="field"><label>{t("name")}</label><input className="input" value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} /></div><div className="field"><label>{t("visibleNickname")}</label><input className="input" value={nickname} onChange={(event) => setNickname(event.target.value)} required maxLength={60} /></div>{error && <div className="notice error">{error}</div>}<button className="btn btn-primary" disabled={loading}><LogIn size={17} /> {loading ? t("joining") : t("joinVote")}</button></form>}</section></main>;
+  return <main className="shell"><SiteHeader /><section className="join-card card center">{data.image_url ? <img src={data.image_url} alt="" /> : <span className="join-image"><Crown /></span>}<p className="eyebrow">{t("publicRoomTag")}</p><h2>{data.title}</h2><p className="lede"><Users size={15} /> {t("membersVotes", { members: data.members, votes: data.votes_cast })}</p>{data.status === "results" ? <div className="notice">{t("closedNoMembers")}</div> : <form onSubmit={join}><div className="field"><label>{t("name")}</label><input className="input" value={name} onChange={(event) => setName(event.target.value)} required maxLength={60} /></div>{error && <div className="notice error">{error}</div>}<button className="btn btn-primary" disabled={loading}><LogIn size={17} /> {loading ? t("joining") : t("joinVote")}</button></form>}</section></main>;
 }
