@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, Compass, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
+import { ArrowRight, CircleHelp, Compass, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
+import OnboardingTour from "@/components/onboarding-tour";
 
 type Room = {
   title: string;
@@ -23,12 +24,14 @@ export default function Home() {
   const [rooms, setRooms] = useState<{ created: Room[]; invited: Room[] }>({ created: [], invited: [] });
   const [error, setError] = useState("");
   const [view, setView] = useState<"home" | "created" | "joined">("home");
+  const [showTutorial, setShowTutorial] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseBrowser();
     const { data: { session } } = await supabase.auth.getSession();
     setUser(session?.user || null);
     if (!session) return;
+    if (session.user.user_metadata.onboarding_completed !== true) setShowTutorial(true);
     const response = await fetch("/api/dashboard", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
     const json = await response.json();
     if (!response.ok) setError(translateError(json.error || "No se pudieron cargar las salas"));
@@ -49,6 +52,11 @@ export default function Home() {
     setUser(null);
   }
 
+  async function completeTutorial() {
+    setShowTutorial(false);
+    await getSupabaseBrowser().auth.updateUser({ data: { onboarding_completed: true } });
+  }
+
   if (user === undefined) return <div className="spinner" />;
   if (!user) return (
     <main className="shell">
@@ -65,7 +73,7 @@ export default function Home() {
 
   return (
     <main className="shell wide">
-      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><button className="icon-btn" onClick={logout} title={t("logout")}><LogOut size={19} /></button></div>
+      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><div className="topbar-actions"><button className="icon-btn" onClick={() => setShowTutorial(true)} title={t("help")}><CircleHelp size={20} /></button><button className="icon-btn" onClick={logout} title={t("logout")}><LogOut size={19} /></button></div></div>
       <section className="dashboard-head">
         <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{user.email}</p></div>
         <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-dark" href="/create"><Plus size={17} /> {t("newRoom")}</a></div>
@@ -73,6 +81,7 @@ export default function Home() {
       {error && <div className="notice error">{error}</div>}
       {(view === "home" || view === "created") && <RoomSection title={t("createdByYou")} rooms={rooms.created} empty={t("noCreated")} />}
       {(view === "home" || view === "joined") && <RoomSection title={t("participating")} rooms={rooms.invited} empty={t("noJoined")} />}
+      <OnboardingTour open={showTutorial} onComplete={completeTutorial} />
     </main>
   );
 }
