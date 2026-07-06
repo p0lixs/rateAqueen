@@ -26,7 +26,7 @@ export default function AuthPage() {
     const supabase = getSupabaseBrowser();
     const next = new URLSearchParams(window.location.search).get("next") || "/";
     if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}` } });
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`, data: { language } } });
       if (error) setError(translate(error.message, language));
       else if (data.session) window.location.href = next;
       else setMessage(t("confirmEmail"));

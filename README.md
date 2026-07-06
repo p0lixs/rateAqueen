@@ -49,6 +49,24 @@ npm run dev
 
 Importa el repositorio en [Vercel](https://vercel.com/), configura las mismas tres variables de entorno y despliega.
 
+## Email de confirmación bilingüe
+
+Durante el registro se guarda el idioma activo (`es` o `en`) en los metadatos del usuario. En **Supabase → Authentication → Email Templates → Confirm signup**, utiliza una plantilla condicional como esta:
+
+```html
+{{ if eq .Data.language "en" }}
+  <h2>Welcome to Rate a Queen!</h2>
+  <p>Confirm your email address to finish creating your account.</p>
+  <p><a href="{{ .ConfirmationURL }}">Confirm my account</a></p>
+{{ else }}
+  <h2>¡Bienvenida a Rate a Queen!</h2>
+  <p>Confirma tu dirección de correo para terminar de crear tu cuenta.</p>
+  <p><a href="{{ .ConfirmationURL }}">Confirmar mi cuenta</a></p>
+{{ end }}
+```
+
+Si el selector está en modo automático, se guarda el idioma detectado del dispositivo.
+
 ## Reglas del ranking
 
 Con `N` reinas, la primera recibe `N` puntos, la segunda `N-1` y la última 1. La clasificación usa la media de puntos. Los empates se resuelven por número de primeros puestos y, si persisten, alfabéticamente.
