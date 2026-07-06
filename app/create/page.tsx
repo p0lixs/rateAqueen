@@ -1,9 +1,10 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { ArrowLeft, Crown, Globe2, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Crown, Globe2, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
+import AppMenu from "@/components/app-menu";
 
 type QueenDraft = { name: string; file?: File; preview?: string };
 type PersonDraft = { name: string };
@@ -70,7 +71,7 @@ export default function CreateRoom() {
 
   return (
     <main className="shell">
-      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><a className="btn btn-soft" href="/"><ArrowLeft size={15} /> {t("backMyRooms")}</a></div>
+      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><AppMenu /></div>
       <section className="hero">
         <p className="eyebrow">{t("gameTagline")}</p>
         <h1>{t("mayBest")}<br /><em>{t("win")}</em></h1>

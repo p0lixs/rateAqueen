@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft, Crown, LogIn, UserPlus } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
+import AppMenu from "@/components/app-menu";
 
 export default function AuthPage() {
   const { t, language } = useI18n();
@@ -38,7 +39,7 @@ export default function AuthPage() {
   }
 
   return <main className="shell auth-shell">
-    <a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a>
+    <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><AppMenu /></div>
     <section className="card auth-card">
       <a className="back-link" href="/"><ArrowLeft size={15} /> {t("back")}</a>
       <p className="eyebrow">{mode === "login" ? t("welcomeBack") : t("joinGame")}</p>

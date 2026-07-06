@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, CircleHelp, Compass, Crown, DoorOpen, LogOut, Plus, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Compass, Crown, DoorOpen, Plus, Sparkles, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
 import OnboardingTour from "@/components/onboarding-tour";
+import AppMenu from "@/components/app-menu";
 
 type Room = {
   title: string;
@@ -46,12 +47,6 @@ export default function Home() {
     return () => window.removeEventListener("hashchange", updateView);
   }, [load]);
 
-  async function logout() {
-    await getSupabaseBrowser().auth.signOut();
-    setRooms({ created: [], invited: [] });
-    setUser(null);
-  }
-
   async function completeTutorial() {
     setShowTutorial(false);
     await getSupabaseBrowser().auth.updateUser({ data: { onboarding_completed: true } });
@@ -60,7 +55,7 @@ export default function Home() {
   if (user === undefined) return <div className="spinner" />;
   if (!user) return (
     <main className="shell">
-      <div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div>
+      <div className="topbar"><div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div><AppMenu /></div>
       <section className="hero landing-hero">
         <p className="eyebrow">The ranking game</p>
         <h1>{t("mayBest")}<br /><em>{t("win")}</em></h1>
@@ -73,7 +68,7 @@ export default function Home() {
 
   return (
     <main className="shell wide">
-      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><div className="topbar-actions"><button className="icon-btn" onClick={() => setShowTutorial(true)} title={t("help")}><CircleHelp size={20} /></button><button className="icon-btn" onClick={logout} title={t("logout")}><LogOut size={19} /></button></div></div>
+      <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><AppMenu onHelp={() => setShowTutorial(true)} /></div>
       <section className="dashboard-head">
         <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{user.email}</p></div>
         <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-dark" href="/create"><Plus size={17} /> {t("newRoom")}</a></div>
