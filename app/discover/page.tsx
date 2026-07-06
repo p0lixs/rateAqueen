@@ -3,10 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { ArrowRight, Crown, Search, Users } from "lucide-react";
 import SiteHeader from "@/components/site-header";
-import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { deviceHeaders, rememberDevice } from "@/lib/device-browser";
 import { useI18n } from "@/components/i18n-provider";
 
-type PublicRoom = { title: string; status: "voting" | "results"; image_url: string | null; votes_cast: number; members: number; joined: boolean; href: string };
+type PublicRoom = { title: string; status: "registration" | "voting" | "results"; image_url: string | null; votes_cast: number; members: number; joined: boolean; href: string };
 
 export default function DiscoverPage() {
   const { t, error: translateError } = useI18n();
@@ -17,9 +17,8 @@ export default function DiscoverPage() {
 
   async function search(event?: FormEvent) {
     event?.preventDefault(); setLoading(true); setError("");
-    const { data: { session } } = await getSupabaseBrowser().auth.getSession();
-    if (!session) return void (window.location.href = "/auth?next=/discover");
-    const response = await fetch(`/api/public-rooms?q=${encodeURIComponent(query)}`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+    const response = await fetch(`/api/public-rooms?q=${encodeURIComponent(query)}`, { headers: deviceHeaders(), cache: "no-store" });
+    rememberDevice(response);
     const json = await response.json();
     if (!response.ok) setError(translateError(json.error || "No se pudieron buscar las salas")); else setRooms(json);
     setLoading(false);

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin, getUserFromRequest } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import type { Queen, Result } from "@/lib/types";
 
-export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(_: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = getSupabaseAdmin();
   let eventId: string | undefined;
@@ -17,10 +17,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     const { data: invitation } = await supabase.from("invitations").select("id,event_id,user_id,events(title,status,visibility)").eq("token", token).maybeSingle();
     const event = invitation && (Array.isArray(invitation.events) ? invitation.events[0] : invitation.events);
     if (invitation && event) {
-      if (event.visibility === "public") {
-        const user = await getUserFromRequest(request);
-        if (!user || invitation.user_id !== user.id) return NextResponse.json({ error: "Debes iniciar sesión con la cuenta miembro de esta sala" }, { status: 401 });
-      }
       eventId = invitation.event_id; invitationId = invitation.id; title = event.title; status = event.status;
     }
   }

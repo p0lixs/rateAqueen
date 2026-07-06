@@ -31,7 +31,8 @@ create table public.invitations (
   has_voted boolean not null default false,
   voted_at timestamptz,
   results_viewed_at timestamptz,
-  user_id uuid references auth.users(id) on delete set null
+  user_id uuid references auth.users(id) on delete set null,
+  device_hash text
 );
 
 -- Deliberadamente no tiene invitation_id, token, identidad ni fecha de creación.
@@ -45,6 +46,7 @@ create table public.ballots (
 create index invitations_event_id_idx on public.invitations(event_id);
 create index invitations_user_id_idx on public.invitations(user_id);
 create unique index invitations_one_account_per_event_idx on public.invitations(event_id, user_id) where user_id is not null;
+create unique index invitations_one_device_per_event_idx on public.invitations(event_id, device_hash) where device_hash is not null;
 create index events_owner_id_idx on public.events(owner_id);
 create index events_public_search_idx on public.events(visibility, status, created_at desc);
 create index queens_event_id_idx on public.queens(event_id);
@@ -69,7 +71,6 @@ declare
   v_queen_count integer;
   v_valid_count integer;
   v_event_status text;
-  v_visibility text;
 begin
   select * into v_invitation
   from public.invitations
@@ -83,17 +84,13 @@ begin
     raise exception 'already voted';
   end if;
 
-  select status, visibility into v_event_status, v_visibility
+  select status into v_event_status
   from public.events
   where id = v_invitation.event_id
   for update;
   if v_event_status <> 'voting' then
     raise exception 'voting closed';
   end if;
-  if v_visibility = 'public' and (p_user_id is null or v_invitation.user_id is null or v_invitation.user_id <> p_user_id) then
-    raise exception 'public room requires member account';
-  end if;
-
   if p_user_id is not null then
     perform pg_advisory_xact_lock(hashtextextended(p_user_id::text || v_invitation.event_id::text, 0));
     if v_invitation.user_id is not null and v_invitation.user_id <> p_user_id then

@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Crown, LogIn, Users } from "lucide-react";
 import SiteHeader from "@/components/site-header";
-import { getSupabaseBrowser } from "@/lib/supabase-browser";
+import { deviceHeaders, rememberDevice } from "@/lib/device-browser";
 import { useI18n } from "@/components/i18n-provider";
 
 type RoomData = { title: string; status: "registration" | "voting" | "results"; image_url: string | null; members: number; votes_cast: number; membership: { token: string; has_voted: boolean } | null };
@@ -12,16 +12,12 @@ export default function JoinPublicRoom({ token }: { token: string }) {
   const { t, error: translateError } = useI18n();
   const [data, setData] = useState<RoomData | null>(null);
   const [name, setName] = useState("");
-  const [accessToken, setAccessToken] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    const { data: { session } } = await getSupabaseBrowser().auth.getSession();
-    if (!session) return void (window.location.href = `/auth?next=${encodeURIComponent(`/join/${token}`)}`);
-    setAccessToken(session.access_token);
-    setName(session.user.email?.split("@")[0] || "");
-    const response = await fetch(`/api/public-rooms/${token}`, { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+    const response = await fetch(`/api/public-rooms/${token}`, { headers: deviceHeaders(), cache: "no-store" });
+    rememberDevice(response);
     const json = await response.json();
     if (!response.ok) setError(translateError(json.error || "No se pudo abrir la sala")); else setData(json);
   }, [token]);
@@ -29,7 +25,8 @@ export default function JoinPublicRoom({ token }: { token: string }) {
 
   async function join(event: FormEvent) {
     event.preventDefault(); setLoading(true); setError("");
-    const response = await fetch(`/api/public-rooms/${token}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ name }) });
+    const response = await fetch(`/api/public-rooms/${token}`, { method: "POST", headers: { "Content-Type": "application/json", ...deviceHeaders() }, body: JSON.stringify({ name }) });
+    rememberDevice(response);
     const json = await response.json();
     if (!response.ok) { setError(translateError(json.error || "No se pudo completar la unión")); setLoading(false); return; }
     window.location.href = `/vote/${json.token}`;

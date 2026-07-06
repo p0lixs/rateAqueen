@@ -65,7 +65,7 @@ export default function Home() {
         <p className="eyebrow">The ranking game</p>
         <h1>{t("mayBest")}<br /><em>{t("win")}</em></h1>
         <p className="lede">{t("landingText")}</p>
-        <div className="hero-actions"><a className="btn btn-dark" href="/auth?mode=signup"><Sparkles size={17} /> {t("signUp")}</a><a className="btn btn-soft" href="/auth">{t("signIn")}</a></div>
+        <div className="hero-actions"><a className="btn btn-dark" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-soft" href="/auth?mode=signup"><Sparkles size={17} /> {t("createAccount")}</a><a className="btn btn-soft" href="/auth">{t("signIn")}</a></div>
         <p className="guest-note"><DoorOpen size={15} /> {t("guestInvite")}</p>
       </section>
     </main>

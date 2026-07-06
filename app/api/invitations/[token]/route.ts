@@ -15,15 +15,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const user = await getUserFromRequest(request);
   const event = Array.isArray(invitation.events) ? invitation.events[0] : invitation.events;
   if (!event) return NextResponse.json({ error: "La partida no existe" }, { status: 404 });
-  if (event.visibility === "public" && !user) return NextResponse.json({ error: "Debes iniciar sesión para acceder a una sala pública" }, { status: 401 });
-  if (user && !invitation.user_id) {
+  if (event.visibility === "private" && user && !invitation.user_id) {
     const { data: existing } = await supabase.from("invitations").select("id,has_voted").eq("event_id", invitation.event_id).eq("user_id", user.id).maybeSingle();
     if (existing && existing.id !== invitation.id) {
       return NextResponse.json({ error: existing.has_voted ? "Ya has votado en esta sala con tu cuenta" : "Tu cuenta ya tiene otra invitación para esta sala" }, { status: 409 });
     }
     const { error: claimError } = await supabase.from("invitations").update({ user_id: user.id }).eq("id", invitation.id).is("user_id", null);
     if (claimError) return NextResponse.json({ error: "Tu cuenta ya está vinculada a otra invitación de esta sala" }, { status: 409 });
-  } else if (user && invitation.user_id && invitation.user_id !== user.id) {
+  } else if (event.visibility === "private" && user && invitation.user_id && invitation.user_id !== user.id) {
     return NextResponse.json({ error: "Esta invitación está vinculada a otra cuenta" }, { status: 403 });
   }
 

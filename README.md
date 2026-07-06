@@ -1,6 +1,6 @@
 # Rate a Queen
 
-Aplicación web móvil para crear rankings. Las salas privadas funcionan mediante invitaciones individuales y permiten votar sin cuenta. Las salas públicas aparecen en el buscador, tienen un enlace global y requieren registro para unirse, votar y consultar resultados. La organizadora prepara las reinas (con foto opcional), puede añadir participantes mientras la sala está abierta y decide cuándo cerrar para publicar la clasificación.
+Aplicación web móvil para crear rankings. Crear y administrar salas requiere una cuenta. Las salas privadas funcionan mediante invitaciones individuales y las públicas aparecen en el buscador, tienen un enlace global y permiten entrar y votar sin registro. La organizadora prepara las reinas (con foto opcional), puede añadir participantes mientras la sala está abierta y decide cuándo cerrar para publicar la clasificación.
 
 La interfaz detecta el idioma principal del dispositivo: usa español para variantes `es-*` e inglés para cualquier otro idioma.
 
@@ -35,6 +35,8 @@ Para añadir salas públicas, ejecuta [`supabase/migrations/005_public_rooms.sql
 Para activar las pestañas de estado y los avisos de resultados nuevos, ejecuta [`supabase/migrations/006_result_notifications.sql`](supabase/migrations/006_result_notifications.sql) después de la migración 005.
 
 Para permitir una fase de inscripción antes de abrir la votación en eventos presenciales, ejecuta [`supabase/migrations/007_registration_phase.sql`](supabase/migrations/007_registration_phase.sql) después de la migración 006.
+
+Para abrir las salas públicas sin registro y limitar cada dispositivo a una participación, ejecuta [`supabase/migrations/008_anonymous_public_rooms.sql`](supabase/migrations/008_anonymous_public_rooms.sql) después de la migración 007.
 
 4. Instala y ejecuta:
 
