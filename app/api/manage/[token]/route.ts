@@ -17,12 +17,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   return NextResponse.json(response, { headers: { "Cache-Control": "no-store" } });
 }
 
-export async function POST(_: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = getSupabaseAdmin();
   const { data: event, error } = await supabase.from("events").select("id,status").eq("admin_token", token).single();
   if (error || !event) return NextResponse.json({ error: "Enlace de administración no válido" }, { status: 404 });
   if (event.status === "results") return NextResponse.json({ status: "results" });
+
+  const { action } = await request.json().catch(() => ({ action: "close" })) as { action?: string };
+  if (action === "open") {
+    if (event.status === "voting") return NextResponse.json({ status: "voting" });
+    const { error: openError } = await supabase.from("events").update({ status: "voting" }).eq("id", event.id).eq("status", "registration");
+    if (openError) return NextResponse.json({ error: "No se pudo abrir la votación" }, { status: 500 });
+    return NextResponse.json({ status: "voting" });
+  }
+  if (event.status === "registration") return NextResponse.json({ error: "La votación todavía no está abierta" }, { status: 409 });
 
   const { count } = await supabase.from("ballots").select("id", { count: "exact", head: true }).eq("event_id", event.id);
   if (!count) return NextResponse.json({ error: "Necesitas al menos un voto antes de cerrar la sala" }, { status: 400 });
@@ -39,7 +48,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ token: 
     .from("events")
     .delete()
     .eq("admin_token", token)
-    .eq("status", "voting")
+    .in("status", ["registration", "voting"])
     .select("id")
     .maybeSingle();
 

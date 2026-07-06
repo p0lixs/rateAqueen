@@ -6,14 +6,15 @@ import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
 
 type QueenDraft = { name: string; file?: File; preview?: string };
-type PersonDraft = { name: string; nickname: string };
+type PersonDraft = { name: string };
 
 export default function CreateRoom() {
   const { t, error: translateError } = useI18n();
   const [title, setTitle] = useState("");
   const [queens, setQueens] = useState<QueenDraft[]>([{ name: "" }, { name: "" }, { name: "" }]);
-  const [people, setPeople] = useState<PersonDraft[]>([{ name: "", nickname: "" }, { name: "", nickname: "" }]);
+  const [people, setPeople] = useState<PersonDraft[]>([{ name: "" }, { name: "" }]);
   const [visibility, setVisibility] = useState<"private" | "public">("private");
+  const [startMode, setStartMode] = useState<"voting" | "registration">("voting");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,7 +39,7 @@ export default function CreateRoom() {
     if (queens.some((queen) => !queen.name.trim())) {
       return setError(t("addQueenNames"));
     }
-    if (visibility === "private" && people.some((person) => !person.name.trim() || !person.nickname.trim())) {
+    if (visibility === "private" && people.some((person) => !person.name.trim())) {
       return setError(t("addParticipantData"));
     }
 
@@ -46,8 +47,9 @@ export default function CreateRoom() {
     const form = new FormData();
     form.set("title", title.trim());
     form.set("queens", JSON.stringify(queens.map((queen) => ({ name: queen.name.trim() }))));
-    form.set("people", JSON.stringify(visibility === "private" ? people.map((person) => ({ name: person.name.trim(), nickname: person.nickname.trim() })) : []));
+    form.set("people", JSON.stringify(visibility === "private" ? people.map((person) => ({ name: person.name.trim() })) : []));
     form.set("visibility", visibility);
+    form.set("startMode", startMode);
     queens.forEach((queen, index) => { if (queen.file) form.set(`photo_${index}`, queen.file); });
 
     try {
@@ -88,6 +90,12 @@ export default function CreateRoom() {
           <button type="button" className={`visibility-option ${visibility === "public" ? "active" : ""}`} onClick={() => setVisibility("public")}><Globe2 size={20} /><span><strong>{t("public")}</strong><small>{t("publicHelp")}</small></span></button>
         </div>
 
+        <div className="section-title"><h3>{t("votingStart")}</h3></div>
+        <div className="visibility-picker">
+          <button type="button" className={`visibility-option ${startMode === "voting" ? "active" : ""}`} onClick={() => setStartMode("voting")}><Sparkles size={20} /><span><strong>{t("startNow")}</strong><small>{t("startNowHelp")}</small></span></button>
+          <button type="button" className={`visibility-option ${startMode === "registration" ? "active" : ""}`} onClick={() => setStartMode("registration")}><LockKeyhole size={20} /><span><strong>{t("registrationFirst")}</strong><small>{t("registrationFirstHelp")}</small></span></button>
+        </div>
+
         <div className="section-title"><h3>{t("queens")}</h3><span className="count">{t("queensCount", { count: queens.length })}</span></div>
         {queens.map((queen, index) => (
           <div className="repeat-row" key={index}>
@@ -104,13 +112,12 @@ export default function CreateRoom() {
 
         {visibility === "private" && <><div className="section-title"><h3>{t("participants")}</h3><span className="count">{t("uniqueLinks")}</span></div>
         {people.map((person, index) => (
-          <div className="repeat-row person-row" key={index}>
+          <div className="repeat-row participant-row" key={index}>
             <input className="input" placeholder={t("name")} value={person.name} onChange={(e) => setPeople(people.map((item, i) => i === index ? { ...item, name: e.target.value } : item))} maxLength={60} />
-            <input className="input nickname" placeholder={t("nickname")} value={person.nickname} onChange={(e) => setPeople(people.map((item, i) => i === index ? { ...item, nickname: e.target.value } : item))} maxLength={60} />
             <button type="button" className="icon-btn" aria-label={t("deleteParticipant")} disabled={people.length <= 1} onClick={() => setPeople(people.filter((_, i) => i !== index))}><Trash2 size={18} /></button>
           </div>
         ))}
-        <button type="button" className="btn btn-soft" onClick={() => setPeople([...people, { name: "", nickname: "" }])}><Plus size={16} /> {t("addPerson")}</button></>}
+        <button type="button" className="btn btn-soft" onClick={() => setPeople([...people, { name: "" }])}><Plus size={16} /> {t("addPerson")}</button></>}
         {visibility === "public" && <div className="notice">{t("publicJoinHelp")}</div>}
 
         {error && <div className="notice error">{error}</div>}

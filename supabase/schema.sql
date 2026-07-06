@@ -8,7 +8,7 @@ create table public.events (
   visibility text not null default 'private' check (visibility in ('private', 'public')),
   public_token text unique,
   owner_id uuid references auth.users(id) on delete set null,
-  status text not null default 'voting' check (status in ('voting', 'results')),
+  status text not null default 'voting' check (status in ('registration', 'voting', 'results')),
   owner_results_viewed_at timestamptz,
   created_at timestamptz not null default now()
 );

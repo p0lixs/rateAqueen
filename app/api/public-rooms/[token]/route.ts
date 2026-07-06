@@ -33,7 +33,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   if (!event) return NextResponse.json({ error: "Esta sala pública no existe" }, { status: 404 });
   const { data: existing } = await supabase.from("invitations").select("token,has_voted").eq("event_id", event.id).eq("user_id", user.id).maybeSingle();
   if (existing) return NextResponse.json(existing);
-  if (event.status !== "voting") return NextResponse.json({ error: "La sala ya está cerrada" }, { status: 409 });
+  if (!["registration", "voting"].includes(event.status)) return NextResponse.json({ error: "La sala ya está cerrada" }, { status: 409 });
   const { count } = await supabase.from("invitations").select("id", { count: "exact", head: true }).eq("event_id", event.id);
   if ((count || 0) >= 100) return NextResponse.json({ error: "La sala ha alcanzado el máximo de 100 miembros" }, { status: 409 });
 

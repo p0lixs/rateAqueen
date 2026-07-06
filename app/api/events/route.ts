@@ -6,7 +6,7 @@ import { getUserFromRequest } from "@/lib/supabase";
 export const runtime = "nodejs";
 
 type QueenInput = { name: string };
-type PersonInput = { name: string; nickname: string };
+type PersonInput = { name: string };
 
 export async function POST(request: Request) {
   try {
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const queens = JSON.parse(String(form.get("queens") || "[]")) as QueenInput[];
     const people = JSON.parse(String(form.get("people") || "[]")) as PersonInput[];
     const visibility = String(form.get("visibility") || "private") === "public" ? "public" : "private";
+    const status = String(form.get("startMode") || "voting") === "registration" ? "registration" : "voting";
 
     if (!title || queens.length < 2 || (visibility === "private" && people.length < 1)) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     const adminToken = createToken();
     const { data: createdEvent, error: eventError } = await supabase
       .from("events")
-      .insert({ title, admin_token: adminToken, owner_id: user.id, visibility, public_token: visibility === "public" ? createToken() : null })
+      .insert({ title, admin_token: adminToken, owner_id: user.id, visibility, status, public_token: visibility === "public" ? createToken() : null })
       .select("id")
       .single();
     if (eventError) throw eventError;
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     const invitationRows = people.map((person) => ({
         event_id: createdEvent.id,
         name: person.name.trim(),
-        nickname: person.nickname.trim(),
+        nickname: person.name.trim(),
         token: createToken(),
       }));
     if (invitationRows.length) {

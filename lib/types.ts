@@ -13,7 +13,7 @@ export type Invitation = {
 
 export type EventInfo = {
   title: string;
-  status: "voting" | "results";
+  status: "registration" | "voting" | "results";
   queens: Queen[];
   voter: { name: string; nickname: string; has_voted: boolean };
   votes_cast: number;

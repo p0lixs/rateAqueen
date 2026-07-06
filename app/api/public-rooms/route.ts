@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   let roomsQuery = supabase.from("events")
     .select("id,title,status,public_token,created_at,queens(image_url,sort_order),invitations(has_voted)")
     .eq("visibility", "public")
-    .eq("status", "voting")
+    .in("status", ["registration", "voting"])
     .order("created_at", { ascending: false })
     .limit(30);
   if (query) roomsQuery = roomsQuery.ilike("title", `%${query}%`);

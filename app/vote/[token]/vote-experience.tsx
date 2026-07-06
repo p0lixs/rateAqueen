@@ -50,10 +50,10 @@ export default function VoteExperience({ token }: { token: string }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (!data?.voter.has_voted || data.status !== "voting") return;
+    if (!data || (data.status !== "registration" && !data.voter.has_voted)) return;
     const interval = window.setInterval(load, 12_000);
     return () => window.clearInterval(interval);
-  }, [data?.voter.has_voted, data?.status, load]);
+  }, [data, load]);
 
   function dragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -87,6 +87,9 @@ export default function VoteExperience({ token }: { token: string }) {
   if (!data) return <div className="spinner" />;
   if (data.status === "results") {
     return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">SASHAY, RESULTS</p><h2>{t("votingClosed")}</h2><p className="lede">{t("rankingReady")}</p><a className="btn btn-primary" href={`/results/${token}`}>{t("viewRanking")}</a></section></main>;
+  }
+  if (data.status === "registration") {
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">{t("registered")}</p><h2>{t("thanks", { name: data.voter.nickname })}</h2><p className="lede">{t("waitingVotingOpen")}</p><div className="progress">{data.votes_total} {t("registeredPeople")}</div><button className="btn btn-primary waiting-button" disabled aria-live="polite"><Hourglass size={17} /> {t("waitingOrganizer")}</button><p className="auto-check">{t("autoOpenCheck")}</p></section></main>;
   }
   if (data.voter.has_voted) {
     return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">{t("voteReceived")}</p><h2>{t("thanks", { name: data.voter.nickname })}</h2><p className="lede">{t("savedAnonymous")}</p><div className="progress">{data.votes_cast}/{data.votes_total}</div><button className="btn btn-primary waiting-button" disabled aria-live="polite"><Hourglass size={17} /> {t("waitingClose")}</button><p className="auto-check">{t("autoCheck")}</p></section></main>;

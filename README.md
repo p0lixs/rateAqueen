@@ -34,6 +34,8 @@ Para añadir salas públicas, ejecuta [`supabase/migrations/005_public_rooms.sql
 
 Para activar las pestañas de estado y los avisos de resultados nuevos, ejecuta [`supabase/migrations/006_result_notifications.sql`](supabase/migrations/006_result_notifications.sql) después de la migración 005.
 
+Para permitir una fase de inscripción antes de abrir la votación en eventos presenciales, ejecuta [`supabase/migrations/007_registration_phase.sql`](supabase/migrations/007_registration_phase.sql) después de la migración 006.
+
 4. Instala y ejecuta:
 
 ```bash
