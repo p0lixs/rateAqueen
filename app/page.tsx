@@ -36,7 +36,7 @@ export default function Home() {
     const json = await response.json();
     if (!response.ok) setError(translateError(json.error || "No se pudieron cargar las salas"));
     else setRooms(json);
-  }, []);
+  }, [translateError]);
 
   useEffect(() => {
     load();

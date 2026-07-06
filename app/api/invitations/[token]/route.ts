@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   }
 
   const { data: invitations } = await supabase.from("invitations").select("has_voted").eq("event_id", invitation.event_id);
-  const queens = [...event.queens].sort((a, b) => a.sort_order - b.sort_order).map(({ sort_order: _, ...queen }) => queen);
+  const queens = [...event.queens].sort((a, b) => a.sort_order - b.sort_order).map((queen) => ({ id: queen.id, name: queen.name, image_url: queen.image_url }));
 
   return NextResponse.json({
     title: event.title,

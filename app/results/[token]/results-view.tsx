@@ -21,7 +21,7 @@ export default function ResultsView({ token }: { token: string }) {
       if (!response.ok) setError(translateError(json.error || "No se pueden mostrar los resultados"));
       else { setData(json); window.dispatchEvent(new Event("result-viewed")); }
     });
-  }, [token]);
+  }, [token, translateError]);
   if (error) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
 

@@ -20,7 +20,7 @@ export default function JoinPublicRoom({ token }: { token: string }) {
     rememberDevice(response);
     const json = await response.json();
     if (!response.ok) setError(translateError(json.error || "No se pudo abrir la sala")); else setData(json);
-  }, [token]);
+  }, [token, translateError]);
   useEffect(() => { load(); }, [load]);
 
   async function join(event: FormEvent) {

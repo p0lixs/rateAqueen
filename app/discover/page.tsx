@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ArrowRight, Crown, Search, Users } from "lucide-react";
 import SiteHeader from "@/components/site-header";
 import { deviceHeaders, rememberDevice } from "@/lib/device-browser";
@@ -15,15 +15,16 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function search(event?: FormEvent) {
-    event?.preventDefault(); setLoading(true); setError("");
-    const response = await fetch(`/api/public-rooms?q=${encodeURIComponent(query)}`, { headers: deviceHeaders(), cache: "no-store" });
+  const runSearch = useCallback(async (searchQuery: string) => {
+    setLoading(true); setError("");
+    const response = await fetch(`/api/public-rooms?q=${encodeURIComponent(searchQuery)}`, { headers: deviceHeaders(), cache: "no-store" });
     rememberDevice(response);
     const json = await response.json();
     if (!response.ok) setError(translateError(json.error || "No se pudieron buscar las salas")); else setRooms(json);
     setLoading(false);
-  }
-  useEffect(() => { search(); }, []);
+  }, [translateError]);
+  function search(event: FormEvent) { event.preventDefault(); void runSearch(query); }
+  useEffect(() => { void runSearch(""); }, [runSearch]);
 
   return <main className="shell wide"><SiteHeader />
     <section className="dashboard-head"><div><p className="eyebrow">{t("exploreTag")}</p><h2>{t("publicOpenRooms")}</h2><p className="lede">{t("exploreLead")}</p></div></section>

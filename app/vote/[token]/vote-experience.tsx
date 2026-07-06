@@ -46,7 +46,7 @@ export default function VoteExperience({ token }: { token: string }) {
     if (!response.ok) return setError(translateError(json.error || "Esta invitación no es válida"));
     setData(json);
     setQueens(json.queens);
-  }, [token]);
+  }, [token, translateError]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {

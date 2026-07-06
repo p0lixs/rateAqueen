@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { Queen, Result } from "@/lib/types";
+import type { Queen } from "@/lib/types";
+import { calculateResults } from "@/lib/ranking";
 
 export async function GET(_: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -30,14 +31,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
     supabase.from("queens").select("id,name,image_url").eq("event_id", eventId),
     supabase.from("ballots").select("ranking").eq("event_id", eventId),
   ]);
-  const score = new Map<string, { total: number; firsts: number }>();
-  (queens || []).forEach((queen) => score.set(queen.id, { total: 0, firsts: 0 }));
-  (ballots || []).forEach((ballot) => (ballot.ranking as string[]).forEach((id, index, ranking) => {
-    const item = score.get(id);
-    if (item) { item.total += ranking.length - index; if (index === 0) item.firsts++; }
-  }));
   const voteCount = ballots?.length || 0;
-  const results: Result[] = (queens as Queen[] || []).map((queen) => ({ ...queen, average: score.get(queen.id)!.total / voteCount, first_places: score.get(queen.id)!.firsts }))
-    .sort((a, b) => b.average - a.average || b.first_places - a.first_places || a.name.localeCompare(b.name, "es"));
+  const results = calculateResults((queens as Queen[]) || [], (ballots || []).map((ballot) => ballot.ranking as string[]));
   return NextResponse.json({ title, votes: voteCount, results }, { headers: { "Cache-Control": "no-store" } });
 }

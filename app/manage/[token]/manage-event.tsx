@@ -32,7 +32,7 @@ export default function ManageEvent({ token }: { token: string }) {
     const json = await response.json();
     if (!response.ok) return setError(translateError(json.error || "No se pudo abrir la partida"));
     setData(json);
-  }, [token]);
+  }, [token, translateError]);
 
   useEffect(() => { load(); }, [load]);
 
