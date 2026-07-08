@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { API_ERROR, type ApiErrorCode } from "@/lib/api-errors";
 import { createToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getUserFromRequest } from "@/lib/supabase";
+import { displayNameFromUser } from "@/lib/user";
 
 export const runtime = "nodejs";
 
@@ -11,7 +13,7 @@ type PersonInput = { name: string };
 export async function POST(request: Request) {
   try {
     const user = await getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: "Debes iniciar sesión para crear una sala" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: API_ERROR.AUTH_REQUIRED_CREATE }, { status: 401 });
     const form = await request.formData();
     const title = String(form.get("title") || "").trim();
     const queens = JSON.parse(String(form.get("queens") || "[]")) as QueenInput[];
@@ -20,17 +22,17 @@ export async function POST(request: Request) {
     const status = String(form.get("startMode") || "voting") === "registration" ? "registration" : "voting";
 
     if (!title || queens.length < 2 || (visibility === "private" && people.length < 1)) {
-      return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+      return NextResponse.json({ error: API_ERROR.INCOMPLETE_DATA }, { status: 400 });
     }
     if (queens.length > 30 || people.length > 100) {
-      return NextResponse.json({ error: "Máximo 30 reinas y 100 participantes" }, { status: 400 });
+      return NextResponse.json({ error: API_ERROR.ROOM_LIMITS_EXCEEDED }, { status: 400 });
     }
 
     const supabase = getSupabaseAdmin();
     const adminToken = createToken();
     const { data: createdEvent, error: eventError } = await supabase
       .from("events")
-      .insert({ title, admin_token: adminToken, owner_id: user.id, visibility, status, public_token: visibility === "public" ? createToken() : null })
+      .insert({ title, admin_token: adminToken, owner_id: user.id, owner_name: displayNameFromUser(user), visibility, status, public_token: visibility === "public" ? createToken() : null })
       .select("id")
       .single();
     if (eventError) throw eventError;
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
         continue;
       }
       if (!file.type.startsWith("image/") || file.size > 5_000_000) {
-        throw new Error(`La foto de ${queens[index].name || `reina ${index + 1}`} no es válida`);
+        throw new ApiRouteError(API_ERROR.INVALID_QUEEN_PHOTO);
       }
       const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
       const path = `${createdEvent.id}/${createToken(12)}.${extension}`;
@@ -69,7 +71,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ adminToken });
   } catch (cause) {
     console.error(cause);
-    const message = cause instanceof Error ? cause.message : "No se pudo crear la partida";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const error = cause instanceof ApiRouteError ? cause.code : API_ERROR.ROOM_CREATE_FAILED;
+    return NextResponse.json({ error }, { status: 500 });
+  }
+}
+
+class ApiRouteError extends Error {
+  constructor(readonly code: ApiErrorCode) {
+    super(code);
   }
 }

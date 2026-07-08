@@ -10,6 +10,7 @@ import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 import ConfirmModal from "@/components/confirm-modal";
 import { useI18n } from "@/components/i18n-provider";
+import { API_ERROR } from "@/lib/api-errors";
 
 function SortableQueen({ queen, index }: { queen: Queen; index: number }) {
   const { t } = useI18n();
@@ -43,7 +44,7 @@ export default function VoteExperience({ token }: { token: string }) {
     const response = await fetch(`/api/invitations/${token}`, { cache: "no-store", headers });
     const json = await response.json();
     if (response.status === 401) return void (window.location.href = `/auth?next=${encodeURIComponent(`/vote/${token}`)}`);
-    if (!response.ok) return setError(translateError(json.error || "Esta invitación no es válida"));
+    if (!response.ok) return setError(translateError(json.error || API_ERROR.INVALID_INVITATION));
     setData(json);
     setQueens(json.queens);
   }, [token, translateError]);
@@ -73,7 +74,7 @@ export default function VoteExperience({ token }: { token: string }) {
     });
     const json = await response.json();
     if (!response.ok) {
-      setError(translateError(json.error || "No se pudo guardar el voto"));
+      setError(translateError(json.error || API_ERROR.VOTE_SAVE_FAILED));
       setConfirming(false);
       return setSending(false);
     }
@@ -86,7 +87,7 @@ export default function VoteExperience({ token }: { token: string }) {
   if (error && !data) return <main className="shell"><SiteHeader /><div className="notice error">{error}</div></main>;
   if (!data) return <div className="spinner" />;
   if (data.status === "results") {
-    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">SASHAY, RESULTS</p><h2>{t("votingClosed")}</h2><p className="lede">{t("rankingReady")}</p><a className="btn btn-primary" href={`/results/${token}`}>{t("viewRanking")}</a></section></main>;
+    return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">{t("resultsTagline")}</p><h2>{t("votingClosed")}</h2><p className="lede">{t("rankingReady")}</p><a className="btn btn-primary" href={`/results/${token}`}>{t("viewRanking")}</a></section></main>;
   }
   if (data.status === "registration") {
     return <main className="shell center"><SiteHeader /><section className="hero"><p className="eyebrow">{t("registered")}</p><h2>{t("thanks", { name: data.voter.nickname })}</h2><p className="lede">{t("waitingVotingOpen")}</p><div className="progress">{data.votes_total} {t("registeredPeople")}</div><button className="btn btn-primary waiting-button" disabled aria-live="polite"><Hourglass size={17} /> {t("waitingOrganizer")}</button><p className="auto-check">{t("autoOpenCheck")}</p></section></main>;
@@ -101,6 +102,7 @@ export default function VoteExperience({ token }: { token: string }) {
       <section className="vote-head">
         <p className="eyebrow">{t("hello", { name: data.voter.nickname })}</p>
         <h1>{data.title}</h1>
+        <p>{t("organizedBy", { name: data.owner_name || t("unknownOrganizer") })}</p>
         <p className="lede">{t("voteLead")}</p>
       </section>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>

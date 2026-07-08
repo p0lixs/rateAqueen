@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
 import { createToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { API_ERROR } from "@/lib/api-errors";
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const { name } = await request.json() as { name?: string };
   const cleanName = name?.trim();
   if (!cleanName || cleanName.length > 60) {
-    return NextResponse.json({ error: "Introduce un nombre válido" }, { status: 400 });
+    return NextResponse.json({ error: API_ERROR.INVALID_NAME }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();
   const { data: event, error } = await supabase.from("events").select("id,status,visibility").eq("admin_token", token).single();
-  if (error || !event) return NextResponse.json({ error: "Enlace de administración no válido" }, { status: 404 });
-  if (!["registration", "voting"].includes(event.status)) return NextResponse.json({ error: "La votación ya está cerrada" }, { status: 409 });
-  if (event.visibility === "public") return NextResponse.json({ error: "En una sala pública los miembros deben unirse mediante el enlace global" }, { status: 409 });
+  if (error || !event) return NextResponse.json({ error: API_ERROR.INVALID_ADMIN_LINK }, { status: 404 });
+  if (!["registration", "voting"].includes(event.status)) return NextResponse.json({ error: API_ERROR.VOTING_CLOSED }, { status: 409 });
+  if (event.visibility === "public") return NextResponse.json({ error: API_ERROR.PUBLIC_MEMBERS_USE_GLOBAL_LINK }, { status: 409 });
 
   const { count } = await supabase.from("invitations").select("id", { count: "exact", head: true }).eq("event_id", event.id);
-  if ((count || 0) >= 100) return NextResponse.json({ error: "La sala ya tiene el máximo de 100 participantes" }, { status: 400 });
+  if ((count || 0) >= 100) return NextResponse.json({ error: API_ERROR.PARTICIPANT_LIMIT_REACHED }, { status: 400 });
 
   const { data, error: insertError } = await supabase.from("invitations").insert({ event_id: event.id, name: cleanName, nickname: cleanName, token: createToken() }).select("name,nickname,token,has_voted").single();
-  if (insertError) return NextResponse.json({ error: "No se pudo añadir la participante" }, { status: 500 });
+  if (insertError) return NextResponse.json({ error: API_ERROR.PARTICIPANT_ADD_FAILED }, { status: 500 });
   return NextResponse.json(data);
 }

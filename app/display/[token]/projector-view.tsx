@@ -5,7 +5,7 @@ import QRCode from "qrcode";
 import { Crown, Hourglass, Vote } from "lucide-react";
 import { useI18n } from "@/components/i18n-provider";
 
-type DisplayData = { title: string; status: "registration" | "voting" | "results"; members: number; votes: number };
+type DisplayData = { title: string; owner_name: string | null; status: "registration" | "voting" | "results"; members: number; votes: number };
 
 export default function ProjectorView({ token }: { token: string }) {
   const { t } = useI18n();
@@ -31,7 +31,7 @@ export default function ProjectorView({ token }: { token: string }) {
   return <main className="projector">
     <div className="projector-brand"><Crown /> Rate a Queen</div>
     <section className="projector-content">
-      <div><p className="eyebrow">{statusText}</p><h1>{data.title}</h1><p className="projector-lead">{data.status === "registration" ? t("scanToRegister") : data.status === "voting" ? t("scanToVote") : t("resultsReady")}</p><div className="projector-stats"><span><Hourglass /> {data.members} {t("registeredPeople")}</span>{data.status !== "registration" && <span><Vote /> {data.votes} {t("votesReceived")}</span>}</div></div>
+      <div><p className="eyebrow">{statusText}</p><h1>{data.title}</h1><p>{t("organizedBy", { name: data.owner_name || t("unknownOrganizer") })}</p><p className="projector-lead">{data.status === "registration" ? t("scanToRegister") : data.status === "voting" ? t("scanToVote") : t("resultsReady")}</p><div className="projector-stats"><span><Hourglass /> {data.members} {t("registeredPeople")}</span>{data.status !== "registration" && <span><Vote /> {data.votes} {t("votesReceived")}</span>}</div></div>
       {data.status !== "results" && qr && <div className="qr-card"><img src={qr} alt={t("roomQr")} /><strong>{t("scanQr")}</strong></div>}
     </section>
   </main>;

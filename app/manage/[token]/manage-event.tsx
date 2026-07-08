@@ -6,9 +6,11 @@ import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 import ConfirmModal from "@/components/confirm-modal";
 import { useI18n } from "@/components/i18n-provider";
+import { API_ERROR } from "@/lib/api-errors";
 
 type AdminData = {
   title: string;
+  owner_name: string | null;
   status: "registration" | "voting" | "results";
   visibility: "private" | "public";
   public_token: string | null;
@@ -30,7 +32,7 @@ export default function ManageEvent({ token }: { token: string }) {
     const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
     const response = await fetch(`/api/manage/${token}`, { cache: "no-store", headers });
     const json = await response.json();
-    if (!response.ok) return setError(translateError(json.error || "No se pudo abrir la partida"));
+    if (!response.ok) return setError(translateError(json.error || API_ERROR.ROOM_OPEN_FAILED));
     setData(json);
   }, [token, translateError]);
 
@@ -59,7 +61,7 @@ export default function ManageEvent({ token }: { token: string }) {
       body: JSON.stringify({ name: newName }),
     });
     const json = await response.json();
-    if (!response.ok) setActionError(translateError(json.error || "No se pudo añadir la participante"));
+    if (!response.ok) setActionError(translateError(json.error || API_ERROR.PARTICIPANT_ADD_FAILED));
     else { setNewName(""); await load(); }
     setBusy(false);
   }
@@ -68,7 +70,7 @@ export default function ManageEvent({ token }: { token: string }) {
     setBusy(true); setActionError("");
     const response = await fetch(`/api/manage/${token}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "close" }) });
     const json = await response.json();
-    if (!response.ok) setActionError(translateError(json.error || "No se pudo cerrar la votación"));
+    if (!response.ok) setActionError(translateError(json.error || API_ERROR.VOTING_CLOSE_FAILED));
     else await load();
     setPendingAction(null);
     setBusy(false);
@@ -78,7 +80,7 @@ export default function ManageEvent({ token }: { token: string }) {
     setBusy(true); setActionError("");
     const response = await fetch(`/api/manage/${token}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "open" }) });
     const json = await response.json();
-    if (!response.ok) setActionError(translateError(json.error || "No se pudo abrir la votación"));
+    if (!response.ok) setActionError(translateError(json.error || API_ERROR.VOTING_OPEN_FAILED));
     else await load();
     setBusy(false);
   }
@@ -88,7 +90,7 @@ export default function ManageEvent({ token }: { token: string }) {
     const response = await fetch(`/api/manage/${token}`, { method: "DELETE" });
     const json = await response.json();
     if (!response.ok) {
-      setActionError(translateError(json.error || "No se pudo eliminar la sala"));
+      setActionError(translateError(json.error || API_ERROR.ROOM_DELETE_FAILED));
       setPendingAction(null);
       setBusy(false);
     } else window.location.href = "/";
@@ -104,6 +106,7 @@ export default function ManageEvent({ token }: { token: string }) {
       <section className="hero">
         <p className="eyebrow">{t("organizerPanel")}</p>
         <h2>{data.title}</h2>
+        <p>{t("organizedBy", { name: data.owner_name || t("unknownOrganizer") })}</p>
         <span className="room-kind">{data.visibility === "public" ? <><Globe2 size={13} /> {t("publicRoom")}</> : <><LockKeyhole size={13} /> {t("privateRoom")}</>}</span>
         <p className="lede">{data.visibility === "public" ? t("publicManageLead") : t("privateManageLead")}</p>
       </section>

@@ -7,9 +7,12 @@ import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
 import OnboardingTour from "@/components/onboarding-tour";
 import AppMenu from "@/components/app-menu";
+import { API_ERROR } from "@/lib/api-errors";
+import { displayNameFromUser } from "@/lib/user";
 
 type Room = {
   title: string;
+  owner_name: string | null;
   status: "voting" | "results";
   image_url: string | null;
   votes_cast: number;
@@ -35,7 +38,7 @@ export default function Home() {
     if (session.user.user_metadata.onboarding_completed !== true) setShowTutorial(true);
     const response = await fetch("/api/dashboard", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
     const json = await response.json();
-    if (!response.ok) setError(translateError(json.error || "No se pudieron cargar las salas"));
+    if (!response.ok) setError(translateError(json.error || API_ERROR.DASHBOARD_LOAD_FAILED));
     else setRooms(json);
   }, [translateError]);
 
@@ -57,7 +60,7 @@ export default function Home() {
     <main className="shell">
       <div className="topbar"><div className="brand"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</div><AppMenu /></div>
       <section className="hero landing-hero">
-        <p className="eyebrow">The ranking game</p>
+        <p className="eyebrow">{t("landingTagline")}</p>
         <h1>{t("mayBest")}<br /><em>{t("win")}</em></h1>
         <p className="lede">{t("landingText")}</p>
         <div className="hero-actions"><a className="btn btn-dark" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-soft" href="/auth?mode=signup"><Sparkles size={17} /> {t("createAccount")}</a><a className="btn btn-soft" href="/auth">{t("signIn")}</a></div>
@@ -70,7 +73,7 @@ export default function Home() {
     <main className="shell wide">
       <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><AppMenu onHelp={() => setShowTutorial(true)} /></div>
       <section className="dashboard-head">
-        <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{user.email}</p></div>
+        <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{displayNameFromUser(user) || t("unknownOrganizer")}</p></div>
         <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-dark" href="/create"><Plus size={17} /> {t("newRoom")}</a></div>
       </section>
       {error && <div className="notice error">{error}</div>}
@@ -97,7 +100,7 @@ function RoomSection({ title, rooms, empty }: { title: string; rooms: Room[]; em
     {visibleRooms.length === 0 ? <div className="empty-state compact">{status === "voting" ? t("noOpen") : t("noResults")}</div> : <div className="room-grid">{visibleRooms.map((room) => (
       <a className="room-card" href={room.href} key={room.href}>
         {room.image_url ? <img src={room.image_url} alt="" /> : <div className="room-placeholder"><Crown /></div>}
-        <div className="room-body"><span className={`room-status ${room.status}`}>{room.status === "results" ? t("results") : t("votingOpen")}</span><h3>{room.title}</h3><p><Users size={14} /> {room.votes_cast}/{room.votes_total}</p></div>
+        <div className="room-body"><span className={`room-status ${room.status}`}>{room.status === "results" ? t("results") : t("votingOpen")}</span><h3>{room.title}</h3>{room.role === "guest" && <p>{t("organizedBy", { name: room.owner_name || t("unknownOrganizer") })}</p>}<p><Users size={14} /> {room.votes_cast}/{room.votes_total}</p></div>
         <ArrowRight className="room-arrow" size={19} />
         {!room.result_seen && room.status === "results" && <span className="new-result-dot" aria-label={t("newResult")} />}
       </a>

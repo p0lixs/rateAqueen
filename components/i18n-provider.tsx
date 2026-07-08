@@ -1,12 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { translateApiError } from "@/lib/api-errors";
 
 type Language = "es" | "en";
 export type LanguagePreference = "auto" | Language;
 type Values = Record<string, string | number>;
 
 const es: Record<string, string> = {
+  publicName: "Nombre público", publicNameHelp: "Será el nombre visible como titular de tus salas.", publicNameLength: "El nombre público debe tener entre 2 y 40 caracteres.", organizedBy: "Organizada por {name}", unknownOrganizer: "Organización sin nombre",
+  landingTagline: "EL JUEGO DE RANKINGS", resultsTagline: "RESULTADOS",
   home: "Inicio", created: "Creadas", joined: "Participo", discover: "Explorar", cancel: "Cancelar", close: "Cerrar", mayBest: "Que gane", win: "la mejor.", logout: "Cerrar sesión", newResult: "Resultado nuevo", optionalPhoto: "Añadir foto opcional", deleteQueen: "Eliminar reina", deleteParticipant: "Eliminar participante", refresh: "Actualizar", queen: "Reina", moveQueen: "Mover a {name}", help: "Ver tutorial", tourStep: "PASO {current} DE {total}", tourWelcomeTitle: "Todo listo para empezar", tourWelcomeText: "Rate a Queen te permite crear rankings, invitar a otras personas y descubrir la clasificación del grupo sin revelar votos individuales.", tourCreateTitle: "Crea salas a tu manera", tourCreateText: "Las salas privadas usan invitaciones personales. Las públicas aparecen en el buscador y permiten que cualquier usuario registrado se una.", tourVoteTitle: "Participa y ordena", tourVoteText: "Arrastra las reinas de mejor a peor. Puedes seguir tus salas desde Participo y cada cuenta solo puede votar una vez.", tourResultsTitle: "Publica y comparte", tourResultsText: "La organizadora decide cuándo cerrar. Verás un aviso cuando haya resultados nuevos y podrás compartir una tarjeta preparada para Instagram.", tourSkip: "Omitir", tourBack: "Atrás", tourNext: "Siguiente", tourStart: "Empezar",
   navLabel: "Navegación principal", myRooms: "Mis salas", yourDashboard: "Tu panel", createdByMe: "Creadas por mí", roomsIJoined: "Salas en las que participo",
   explorePublic: "Explorar públicas", newRoom: "Nueva sala", createdByYou: "Creadas por ti", participating: "Participas", noCreated: "Todavía no has creado ninguna sala.", noJoined: "Las salas a las que te unas o cuyas invitaciones abras aparecerán aquí.", roomsCount: "{count} salas",
@@ -25,6 +28,8 @@ const es: Record<string, string> = {
 };
 
 const en: Record<string, string> = {
+  publicName: "Public name", publicNameHelp: "This name will be shown as the owner of your rooms.", publicNameLength: "The public name must be between 2 and 40 characters.", organizedBy: "Organized by {name}", unknownOrganizer: "Unnamed organizer",
+  landingTagline: "THE RANKING GAME", resultsTagline: "SASHAY, RESULTS",
   home: "Home", created: "Created", joined: "Joined", discover: "Explore", cancel: "Cancel", close: "Close", mayBest: "May the best", win: "queen win.", logout: "Sign out", newResult: "New result", optionalPhoto: "Add optional photo", deleteQueen: "Delete queen", deleteParticipant: "Delete participant", refresh: "Refresh", queen: "Queen", moveQueen: "Move {name}", help: "View tutorial", tourStep: "STEP {current} OF {total}", tourWelcomeTitle: "You're ready to begin", tourWelcomeText: "Rate a Queen lets you create rankings, invite other people and reveal the group's final ranking without exposing individual votes.", tourCreateTitle: "Create rooms your way", tourCreateText: "Private rooms use personal invitations. Public rooms appear in search and allow any registered user to join.", tourVoteTitle: "Join and rank", tourVoteText: "Drag queens from best to worst. Follow your rooms from Joined, and each account can only vote once.", tourResultsTitle: "Publish and share", tourResultsText: "The organizer decides when to close. You'll get a notification for new results and can share an Instagram-ready card.", tourSkip: "Skip", tourBack: "Back", tourNext: "Next", tourStart: "Get started",
   navLabel: "Main navigation", myRooms: "My rooms", yourDashboard: "Your dashboard", createdByMe: "Created by me", roomsIJoined: "Rooms I joined",
   explorePublic: "Explore public rooms", newRoom: "New room", createdByYou: "Created by you", participating: "You participate",
@@ -76,7 +81,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("languagechange", apply); return () => window.removeEventListener("languagechange", apply);
   }, [preference]);
   const setPreference = (next: LanguagePreference) => { setPreferenceState(next); if (next === "auto") window.localStorage.removeItem("raq-language"); else window.localStorage.setItem("raq-language", next); };
-  const value = useMemo<I18nContextValue>(() => ({ language, preference, setPreference, t: (key, values) => interpolate((language === "en" ? en : es)[key] || key, values), error: (message) => language === "en" ? errorTranslations[message] || message : message }), [language, preference]);
+  const value = useMemo<I18nContextValue>(() => ({ language, preference, setPreference, t: (key, values) => interpolate((language === "en" ? en : es)[key] || key, values), error: (message) => translateApiError(message, language) || (language === "en" ? errorTranslations[message] || message : message) }), [language, preference]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

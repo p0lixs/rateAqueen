@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
+import { API_ERROR } from "@/lib/api-errors";
 import { getSupabaseAdmin, getUserFromRequest } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   const user = await getUserFromRequest(request);
-  if (!user) return NextResponse.json({ error: "Sesión no válida" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: API_ERROR.INVALID_SESSION }, { status: 401 });
   const supabase = getSupabaseAdmin();
   const [{ data: owned, error: ownedError }, { data: invited, error: invitedError }] = await Promise.all([
-    supabase.from("events").select("title,status,admin_token,created_at,owner_results_viewed_at,queens(image_url,sort_order),invitations(has_voted)").eq("owner_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("invitations").select("token,has_voted,results_viewed_at,events(title,status,queens(image_url,sort_order),invitations(has_voted))").eq("user_id", user.id),
+    supabase.from("events").select("title,owner_name,status,admin_token,created_at,owner_results_viewed_at,queens(image_url,sort_order),invitations(has_voted)").eq("owner_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("invitations").select("token,has_voted,results_viewed_at,events(title,owner_name,status,queens(image_url,sort_order),invitations(has_voted))").eq("user_id", user.id),
   ]);
-  if (ownedError || invitedError) return NextResponse.json({ error: "No se pudieron cargar las salas" }, { status: 500 });
+  if (ownedError || invitedError) return NextResponse.json({ error: API_ERROR.DASHBOARD_LOAD_FAILED }, { status: 500 });
 
   const created = (owned || []).map((event) => ({
     title: event.title,
+    owner_name: event.owner_name,
     status: event.status,
     image_url: firstImage(event.queens),
     votes_cast: event.invitations.filter((item) => item.has_voted).length,
@@ -26,6 +28,7 @@ export async function GET(request: Request) {
     if (!event) return [];
     return [{
       title: event.title,
+      owner_name: event.owner_name,
       status: event.status,
       image_url: firstImage(event.queens),
       votes_cast: event.invitations.filter((item) => item.has_voted).length,

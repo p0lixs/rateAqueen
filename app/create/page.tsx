@@ -4,6 +4,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Crown, Globe2, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { useI18n } from "@/components/i18n-provider";
+import { API_ERROR } from "@/lib/api-errors";
 import AppMenu from "@/components/app-menu";
 
 type QueenDraft = { name: string; file?: File; preview?: string };
@@ -61,7 +62,7 @@ export default function CreateRoom() {
       }
       const response = await fetch("/api/events", { method: "POST", body: form, headers: { Authorization: `Bearer ${session.access_token}` } });
       const data = await response.json();
-      if (!response.ok) throw new Error(translateError(data.error || "No se pudo crear la partida"));
+      if (!response.ok) throw new Error(translateError(data.error || API_ERROR.ROOM_CREATE_FAILED));
       window.location.href = `/manage/${data.adminToken}`;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t("genericError"));
