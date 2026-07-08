@@ -4,26 +4,113 @@ import AppMenu from "@/components/app-menu";
 import { useI18n } from "@/components/i18n-provider";
 import { API_ERROR } from "@/lib/api-errors";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
-import { Crown, Globe2, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+   closestCenter,
+   DndContext,
+   DragEndEvent,
+   KeyboardSensor,
+   PointerSensor,
+   TouchSensor,
+   useSensor,
+   useSensors,
+} from "@dnd-kit/core";
+import {
+   arrayMove,
+   SortableContext,
+   sortableKeyboardCoordinates,
+   useSortable,
+   verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Crown, Globe2, GripVertical, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
-type QueenDraft = { name: string; file?: File; preview?: string; photoError?: string };
+type QueenDraft = { id: string; name: string; file?: File; preview?: string; photoError?: string };
 type PersonDraft = { name: string };
 
 const MAX_PEOPLE = 100;
 const MAX_PHOTO_SIZE = 5_000_000;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const QUEEN_PAGE_SIZE = 20;
+
+function newQueen(name = ""): QueenDraft {
+   return { id: crypto.randomUUID(), name };
+}
+
+type SortableQueenDraftProps = {
+   queen: QueenDraft;
+   index: number;
+   duplicate: boolean;
+   canDelete: boolean;
+   onChange: (patch: Partial<QueenDraft>) => void;
+   onPhoto: (event: ChangeEvent<HTMLInputElement>) => void;
+   onDelete: () => void;
+   t: (key: string, values?: Record<string, string | number>) => string;
+};
+
+function SortableQueenDraft({ queen, index, duplicate, canDelete, onChange, onPhoto, onDelete, t }: SortableQueenDraftProps) {
+   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: queen.id });
+   return (
+      <div
+         ref={setNodeRef}
+         style={{ transform: CSS.Transform.toString(transform), transition }}
+         className={`repeat-item sortable-draft ${isDragging ? "dragging" : ""}`}
+      >
+         <div className="repeat-row create-queen-row">
+            <label className="photo-input" title={t("optionalPhoto")}>
+               {queen.preview ? <img src={queen.preview} alt="" /> : <ImagePlus size={20} />}
+               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto} />
+            </label>
+            <input
+               className={`input ${!queen.name.trim() || duplicate ? "input-error" : ""}`}
+               placeholder={`${t("queen")} ${index + 1}`}
+               value={queen.name}
+               onChange={(event) => onChange({ name: event.target.value })}
+               maxLength={60}
+               aria-invalid={!queen.name.trim() || duplicate}
+            />
+            <button
+               type="button"
+               className="icon-btn drag-handle"
+               aria-label={t("moveQueen", { name: queen.name || `${t("queen")} ${index + 1}` })}
+               {...attributes}
+               {...listeners}
+            >
+               <GripVertical size={18} />
+            </button>
+            <button type="button" className="icon-btn" aria-label={t("deleteQueen")} disabled={!canDelete} onClick={onDelete}>
+               <Trash2 size={18} />
+            </button>
+         </div>
+         {duplicate && <p className="inline-error">{t("duplicateName")}</p>}
+         {queen.photoError && <p className="inline-error">{queen.photoError}</p>}
+      </div>
+   );
+}
 
 export default function CreateRoom() {
    const { t, error: translateError } = useI18n();
    const [title, setTitle] = useState("");
-   const [queens, setQueens] = useState<QueenDraft[]>([{ name: "" }, { name: "" }, { name: "" }]);
+   const [queens, setQueens] = useState<QueenDraft[]>([
+      { id: "initial-1", name: "" },
+      { id: "initial-2", name: "" },
+      { id: "initial-3", name: "" },
+   ]);
    const [people, setPeople] = useState<PersonDraft[]>([{ name: "" }, { name: "" }]);
    const [visibility, setVisibility] = useState<"private" | "public">("public");
    const [startMode, setStartMode] = useState<"voting" | "registration">("voting");
    const [loading, setLoading] = useState(false);
+   const [templateLoading, setTemplateLoading] = useState(false);
+   const [templateLoaded, setTemplateLoaded] = useState(false);
+   const [visibleQueenCount, setVisibleQueenCount] = useState(QUEEN_PAGE_SIZE);
    const [error, setError] = useState("");
    const previewUrls = useRef(new Set<string>());
+   const templateRequested = useRef(false);
+   const sensors = useSensors(
+      useSensor(PointerSensor),
+      useSensor(TouchSensor),
+      useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+   );
 
    const duplicateQueens = useMemo(() => duplicateIndexes(queens), [queens]);
    const duplicatePeople = useMemo(() => duplicateIndexes(people), [people]);
@@ -41,6 +128,42 @@ export default function CreateRoom() {
             if (!data.session) window.location.href = "/auth?next=/create";
          });
    }, []);
+
+   useEffect(() => {
+      if (templateRequested.current) return;
+      const templateToken = new URLSearchParams(window.location.search).get("template");
+      if (!templateToken) return;
+      let active = true;
+      setTemplateLoading(true);
+      getSupabaseBrowser().auth.getSession().then(async ({ data: { session } }) => {
+         const headers = session ? { Authorization: `Bearer ${session.access_token}` } : undefined;
+         const response = await fetch(`/api/manage/${encodeURIComponent(templateToken)}`, { cache: "no-store", headers });
+         const template = await response.json();
+         if (!active) return;
+         if (!response.ok) setError(translateError(template.error || API_ERROR.ROOM_OPEN_FAILED));
+         else {
+            templateRequested.current = true;
+            const templateQueens = (template.queens as Array<{ name: string; sort_order: number }>)
+               .sort((a, b) => a.sort_order - b.sort_order)
+               .map((queen, index) => ({ id: `template-${index}`, name: queen.name }));
+            setTitle(t("copyTitle", { title: template.title }).slice(0, 80));
+            setQueens(templateQueens.length >= 2 ? templateQueens : [newQueen(), newQueen()]);
+            setPeople(
+               template.visibility === "private" && template.invitations.length
+                  ? template.invitations.map((person: { name: string }) => ({ name: person.name }))
+                  : [{ name: "" }, { name: "" }],
+            );
+            setVisibility(template.visibility);
+            setStartMode(template.status === "registration" ? "registration" : "voting");
+            setVisibleQueenCount(QUEEN_PAGE_SIZE);
+            setTemplateLoaded(true);
+         }
+         setTemplateLoading(false);
+      });
+      return () => {
+         active = false;
+      };
+   }, [t, translateError]);
 
    useEffect(() => {
       const urls = previewUrls.current;
@@ -76,6 +199,20 @@ export default function CreateRoom() {
          previewUrls.current.delete(preview);
       }
       setQueens((current) => current.filter((_, i) => i !== index));
+   }
+
+   function dragQueen(event: DragEndEvent) {
+      if (!event.over || event.active.id === event.over.id) return;
+      setQueens((current) => {
+         const from = current.findIndex((queen) => queen.id === event.active.id);
+         const to = current.findIndex((queen) => queen.id === event.over?.id);
+         return from >= 0 && to >= 0 ? arrayMove(current, from, to) : current;
+      });
+   }
+
+   function addQueen() {
+      setVisibleQueenCount((count) => Math.max(count, queens.length + 1));
+      setQueens((current) => [...current, newQueen()]);
    }
 
    async function submit(event: FormEvent) {
@@ -148,6 +285,8 @@ export default function CreateRoom() {
 
          <form className="card" onSubmit={submit}>
             <p className="eyebrow">{t("newGame")}</p>
+            {templateLoading && <div className="notice">{t("loadingTemplate")}</div>}
+            {templateLoaded && <div className="notice">{t("templatePhotosHelp")}</div>}
             <div className="field">
                <label htmlFor="title">{t("editionName")}</label>
                <input
@@ -221,41 +360,37 @@ export default function CreateRoom() {
                <h3>{t("queens")}</h3>
                <span className="count">{t("queensCount", { count: queens.length })}</span>
             </div>
-            {queens.map((queen, index) => (
-               <div className="repeat-item" key={index}>
-               <div className="repeat-row">
-                  <label className="photo-input" title={t("optionalPhoto")}>
-                     {queen.preview ? <img src={queen.preview} alt="" /> : <ImagePlus size={20} />}
-                     <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={(event) => pickPhoto(index, event)}
+            <DndContext id="create-queens" sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragQueen}>
+               <SortableContext
+                  items={queens.slice(0, visibleQueenCount).map((queen) => queen.id)}
+                  strategy={verticalListSortingStrategy}
+               >
+                  {queens.slice(0, visibleQueenCount).map((queen, index) => (
+                     <SortableQueenDraft
+                        key={queen.id}
+                        queen={queen}
+                        index={index}
+                        duplicate={duplicateQueens.has(index)}
+                        canDelete={queens.length > 2}
+                        onChange={(patch) => updateQueen(index, patch)}
+                        onPhoto={(event) => pickPhoto(index, event)}
+                        onDelete={() => removeQueen(index)}
+                        t={t}
                      />
-                  </label>
-                  <input
-                     className={`input ${!queen.name.trim() || duplicateQueens.has(index) ? "input-error" : ""}`}
-                     placeholder={`${t("queen")} ${index + 1}`}
-                     value={queen.name}
-                     onChange={(e) => updateQueen(index, { name: e.target.value })}
-                     maxLength={60}
-                     aria-invalid={!queen.name.trim() || duplicateQueens.has(index)}
-                  />
-                  <button
-                     type="button"
-                     className="icon-btn"
-                     aria-label={t("deleteQueen")}
-                     disabled={queens.length <= 2}
-                     onClick={() => removeQueen(index)}
-                  >
-                     <Trash2 size={18} />
-                  </button>
-               </div>
-               {duplicateQueens.has(index) && <p className="inline-error">{t("duplicateName")}</p>}
-               {queen.photoError && <p className="inline-error">{queen.photoError}</p>}
-               </div>
-            ))}
+                  ))}
+               </SortableContext>
+            </DndContext>
+            {visibleQueenCount < queens.length && (
+               <button
+                  type="button"
+                  className="btn btn-soft list-more"
+                  onClick={() => setVisibleQueenCount((count) => count + QUEEN_PAGE_SIZE)}
+               >
+                  {t("showMoreQueens", { count: Math.min(QUEEN_PAGE_SIZE, queens.length - visibleQueenCount) })}
+               </button>
+            )}
             <p className="field-hint">{t("optionalPhotos")}</p>
-            <button type="button" className="btn btn-soft" onClick={() => setQueens([...queens, { name: "" }])}>
+            <button type="button" className="btn btn-soft" onClick={addQueen}>
                <Plus size={16} /> {t("addQueen")}
             </button>
 
@@ -302,7 +437,7 @@ export default function CreateRoom() {
             {visibility === "public" && <div className="notice">{t("publicJoinHelp")}</div>}
 
             {error && <div className="notice error">{error}</div>}
-            <button className="btn btn-primary" disabled={loading || formInvalid}>
+            <button className="btn btn-primary" disabled={loading || templateLoading || formInvalid}>
                <Sparkles size={18} /> {loading ? t("creatingRoom") : t("createRoom")}
             </button>
          </form>

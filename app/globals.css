@@ -65,6 +65,9 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .row { display: flex; gap: 10px; align-items: center; }
 .row > .input { flex: 1; }
 .repeat-row { display: grid; grid-template-columns: 62px 1fr auto; gap: 10px; margin-bottom: 10px; align-items: center; }
+.create-queen-row { grid-template-columns: 62px minmax(0, 1fr) auto auto; }
+.sortable-draft.dragging { position: relative; z-index: 4; opacity: .75; }
+.list-more { display: flex; margin: 0 auto 12px; }
 .participant-row { grid-template-columns: minmax(0,1fr) auto; }
 .photo-input { width: 62px; height: 56px; border: 1px dashed #cdbdca; border-radius: 12px; display: grid; place-items: center; overflow: hidden; background: #fff7fb; color: var(--pink); position: relative; }
 .photo-input input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
@@ -149,6 +152,7 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .dashboard-head h2 { margin-bottom: 8px; }
 .dashboard-head .lede { margin: 0; font-size: .9rem; }
 .dashboard-actions { display: flex; align-items: center; gap: 9px; }
+.manage-actions { display: flex; justify-content: flex-end; margin: 12px 0 20px; }
 .room-section { margin: 20px 0 40px; }
 .status-tabs { display: inline-flex; gap: 5px; padding: 4px; margin-bottom: 14px; border-radius: 999px; background: #eee7eb; }
 .status-tabs button { position: relative; display: flex; align-items: center; gap: 6px; padding: 8px 13px; border: 0; border-radius: 999px; color: var(--muted); background: transparent; font-size: .76rem; font-weight: 800; }

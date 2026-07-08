@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, ExternalLink, Globe2, LockKeyhole, Play, Plus, Presentation, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Copy, CopyPlus, ExternalLink, Globe2, LockKeyhole, Play, Plus, Presentation, RefreshCw, Trash2 } from "lucide-react";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import SiteHeader from "@/components/site-header";
 import ConfirmModal from "@/components/confirm-modal";
@@ -14,6 +14,7 @@ type AdminData = {
   status: "registration" | "voting" | "results";
   visibility: "private" | "public";
   public_token: string | null;
+  queens: { name: string; sort_order: number }[];
   invitations: { name: string; nickname: string; token: string; has_voted: boolean }[];
 };
 
@@ -113,6 +114,9 @@ export default function ManageEvent({ token }: { token: string }) {
       <div className="stat-grid">
         <div className="stat"><strong>{cast}/{data.invitations.length}</strong><span>{t("votesReceived")}</span></div>
         <div className="stat"><strong>{data.status === "results" ? t("published") : data.status === "registration" ? t("registrationOpen") : t("open")}</strong><span>{t("state")}</span></div>
+      </div>
+      <div className="manage-actions">
+        <a className="btn btn-soft" href={`/create?template=${encodeURIComponent(token)}`}><CopyPlus size={16} /> {t("duplicateRoom")}</a>
       </div>
       {data.status === "results" && <a className="btn btn-primary" href={`/results/${token}`}><ExternalLink size={17} /> {t("viewFinal")}</a>}
 
