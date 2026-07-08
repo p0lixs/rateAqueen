@@ -70,6 +70,27 @@ describe("POST /api/events", () => {
     expect(getSupabaseAdmin).not.toHaveBeenCalled();
   });
 
+  it("allows rooms with more than 30 queens", async () => {
+    const mock = supabaseMock();
+    getSupabaseAdmin.mockReturnValue(mock.client);
+    const queens = Array.from({ length: 31 }, (_, index) => ({ name: `Queen ${index + 1}` }));
+
+    const response = await POST(createRequest({ queens }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toHaveProperty("adminToken");
+  });
+
+  it("rejects private rooms with more than 100 participants before writing", async () => {
+    const people = Array.from({ length: 101 }, (_, index) => ({ name: `Person ${index + 1}` }));
+
+    const response = await POST(createRequest({ people, visibility: "private" }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: API_ERROR.ROOM_LIMITS_EXCEEDED });
+    expect(getSupabaseAdmin).not.toHaveBeenCalled();
+  });
+
   it("removes uploaded images and the event when a later insert fails", async () => {
     const mock = supabaseMock({ queenError: { message: "insert failed" } });
     getSupabaseAdmin.mockReturnValue(mock.client);

@@ -5,10 +5,14 @@ import { useI18n } from "@/components/i18n-provider";
 import { API_ERROR } from "@/lib/api-errors";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { Crown, Globe2, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
-type QueenDraft = { name: string; file?: File; preview?: string };
+type QueenDraft = { name: string; file?: File; preview?: string; photoError?: string };
 type PersonDraft = { name: string };
+
+const MAX_PEOPLE = 100;
+const MAX_PHOTO_SIZE = 5_000_000;
+const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export default function CreateRoom() {
    const { t, error: translateError } = useI18n();
@@ -19,6 +23,16 @@ export default function CreateRoom() {
    const [startMode, setStartMode] = useState<"voting" | "registration">("voting");
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState("");
+   const previewUrls = useRef(new Set<string>());
+
+   const duplicateQueens = useMemo(() => duplicateIndexes(queens), [queens]);
+   const duplicatePeople = useMemo(() => duplicateIndexes(people), [people]);
+   const formInvalid =
+      !title.trim() ||
+      queens.some((queen) => !queen.name.trim() || queen.photoError) ||
+      duplicateQueens.size > 0 ||
+      (visibility === "private" &&
+         (people.length > MAX_PEOPLE || people.some((person) => !person.name.trim()) || duplicatePeople.size > 0));
 
    useEffect(() => {
       getSupabaseBrowser()
@@ -28,18 +42,46 @@ export default function CreateRoom() {
          });
    }, []);
 
+   useEffect(() => {
+      const urls = previewUrls.current;
+      return () => urls.forEach((url) => URL.revokeObjectURL(url));
+   }, []);
+
    function updateQueen(index: number, patch: Partial<QueenDraft>) {
       setQueens((current) => current.map((queen, i) => (i === index ? { ...queen, ...patch } : queen)));
    }
 
    function pickPhoto(index: number, event: ChangeEvent<HTMLInputElement>) {
       const file = event.target.files?.[0];
-      if (file) updateQueen(index, { file, preview: URL.createObjectURL(file) });
+      if (!file) return;
+      const currentPreview = queens[index].preview;
+      if (!PHOTO_TYPES.has(file.type) || file.size > MAX_PHOTO_SIZE) {
+         event.target.value = "";
+         updateQueen(index, { photoError: t("invalidQueenPhoto") });
+         return;
+      }
+      if (currentPreview) {
+         URL.revokeObjectURL(currentPreview);
+         previewUrls.current.delete(currentPreview);
+      }
+      const preview = URL.createObjectURL(file);
+      previewUrls.current.add(preview);
+      updateQueen(index, { file, preview, photoError: undefined });
+   }
+
+   function removeQueen(index: number) {
+      const preview = queens[index].preview;
+      if (preview) {
+         URL.revokeObjectURL(preview);
+         previewUrls.current.delete(preview);
+      }
+      setQueens((current) => current.filter((_, i) => i !== index));
    }
 
    async function submit(event: FormEvent) {
       event.preventDefault();
       setError("");
+      if (formInvalid) return setError(t("fixFormErrors"));
       if (queens.some((queen) => !queen.name.trim())) {
          return setError(t("addQueenNames"));
       }
@@ -180,7 +222,8 @@ export default function CreateRoom() {
                <span className="count">{t("queensCount", { count: queens.length })}</span>
             </div>
             {queens.map((queen, index) => (
-               <div className="repeat-row" key={index}>
+               <div className="repeat-item" key={index}>
+               <div className="repeat-row">
                   <label className="photo-input" title={t("optionalPhoto")}>
                      {queen.preview ? <img src={queen.preview} alt="" /> : <ImagePlus size={20} />}
                      <input
@@ -190,21 +233,25 @@ export default function CreateRoom() {
                      />
                   </label>
                   <input
-                     className="input"
+                     className={`input ${!queen.name.trim() || duplicateQueens.has(index) ? "input-error" : ""}`}
                      placeholder={`${t("queen")} ${index + 1}`}
                      value={queen.name}
                      onChange={(e) => updateQueen(index, { name: e.target.value })}
                      maxLength={60}
+                     aria-invalid={!queen.name.trim() || duplicateQueens.has(index)}
                   />
                   <button
                      type="button"
                      className="icon-btn"
                      aria-label={t("deleteQueen")}
                      disabled={queens.length <= 2}
-                     onClick={() => setQueens(queens.filter((_, i) => i !== index))}
+                     onClick={() => removeQueen(index)}
                   >
                      <Trash2 size={18} />
                   </button>
+               </div>
+               {duplicateQueens.has(index) && <p className="inline-error">{t("duplicateName")}</p>}
+               {queen.photoError && <p className="inline-error">{queen.photoError}</p>}
                </div>
             ))}
             <p className="field-hint">{t("optionalPhotos")}</p>
@@ -219,9 +266,10 @@ export default function CreateRoom() {
                      <span className="count">{t("uniqueLinks")}</span>
                   </div>
                   {people.map((person, index) => (
-                     <div className="repeat-row participant-row" key={index}>
+                     <div className="repeat-item" key={index}>
+                     <div className="repeat-row participant-row">
                         <input
-                           className="input"
+                           className={`input ${!person.name.trim() || duplicatePeople.has(index) ? "input-error" : ""}`}
                            placeholder={t("name")}
                            value={person.name}
                            onChange={(e) =>
@@ -230,6 +278,7 @@ export default function CreateRoom() {
                               )
                            }
                            maxLength={60}
+                           aria-invalid={!person.name.trim() || duplicatePeople.has(index)}
                         />
                         <button
                            type="button"
@@ -241,8 +290,11 @@ export default function CreateRoom() {
                            <Trash2 size={18} />
                         </button>
                      </div>
+                     {duplicatePeople.has(index) && <p className="inline-error participant-error">{t("duplicateName")}</p>}
+                     </div>
                   ))}
-                  <button type="button" className="btn btn-soft" onClick={() => setPeople([...people, { name: "" }])}>
+                  {people.length >= MAX_PEOPLE && <p className="inline-error">{t("participantLimit")}</p>}
+                  <button type="button" className="btn btn-soft" disabled={people.length >= MAX_PEOPLE} onClick={() => setPeople([...people, { name: "" }])}>
                      <Plus size={16} /> {t("addPerson")}
                   </button>
                </>
@@ -250,10 +302,19 @@ export default function CreateRoom() {
             {visibility === "public" && <div className="notice">{t("publicJoinHelp")}</div>}
 
             {error && <div className="notice error">{error}</div>}
-            <button className="btn btn-primary" disabled={loading}>
+            <button className="btn btn-primary" disabled={loading || formInvalid}>
                <Sparkles size={18} /> {loading ? t("creatingRoom") : t("createRoom")}
             </button>
          </form>
       </main>
    );
+}
+
+function duplicateIndexes(items: Array<{ name: string }>) {
+   const indexes = new Map<string, number[]>();
+   items.forEach(({ name }, index) => {
+      const normalized = name.trim().toLocaleLowerCase();
+      if (normalized) indexes.set(normalized, [...(indexes.get(normalized) || []), index]);
+   });
+   return new Set([...indexes.values()].filter((matches) => matches.length > 1).flat());
 }

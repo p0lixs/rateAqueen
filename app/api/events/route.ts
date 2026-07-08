@@ -10,7 +10,6 @@ type NamedInput = { name: string };
 
 const MAX_TITLE_LENGTH = 80;
 const MAX_NAME_LENGTH = 60;
-const MAX_QUEENS = 30;
 const MAX_PEOPLE = 100;
 const MAX_PHOTO_SIZE = 5_000_000;
 const PHOTO_EXTENSIONS: Record<string, string> = {
@@ -109,7 +108,7 @@ function validateInputs({ title, queens, people, visibility, form }: {
   if (!title || title.length > MAX_TITLE_LENGTH || queens.length < 2 || (visibility === "private" && people.length < 1)) {
     throw new ApiRouteError(API_ERROR.INCOMPLETE_DATA);
   }
-  if (queens.length > MAX_QUEENS || people.length > MAX_PEOPLE) throw new ApiRouteError(API_ERROR.ROOM_LIMITS_EXCEEDED);
+  if (people.length > MAX_PEOPLE) throw new ApiRouteError(API_ERROR.ROOM_LIMITS_EXCEEDED);
   if (visibility === "public" && people.length > 0) throw new ApiRouteError(API_ERROR.INCOMPLETE_DATA);
   if (!validNames(queens) || !validNames(people)) throw new ApiRouteError(API_ERROR.INCOMPLETE_DATA);
 

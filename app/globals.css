@@ -49,6 +49,11 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .field { display: grid; gap: 7px; margin-bottom: 14px; }
 .field label { font-size: .8rem; font-weight: 700; }
 .field-hint { color: var(--muted); font-size: .75rem; margin: -2px 0 12px; }
+.repeat-item { margin-bottom: 10px; }
+.repeat-item .repeat-row { margin-bottom: 0; }
+.input-error { border-color: #c9365b !important; box-shadow: 0 0 0 2px rgba(201, 54, 91, .12); }
+.inline-error { color: #a51f46; font-size: .76rem; margin: 5px 0 0 72px; }
+.participant-error { margin-left: 0; }
 .visibility-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
 .visibility-option { display: flex; align-items: center; gap: 11px; padding: 15px; text-align: left; border: 1px solid var(--line); border-radius: 15px; background: white; color: var(--muted); }
 .visibility-option span { display: grid; gap: 3px; }
