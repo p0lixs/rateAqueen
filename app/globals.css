@@ -16,6 +16,7 @@
 html { background: var(--cream); }
 body {
   margin: 0;
+  display: flow-root;
   color: var(--ink);
   background:
     radial-gradient(circle at 90% 5%, rgba(240,45,128,.14), transparent 30rem),
