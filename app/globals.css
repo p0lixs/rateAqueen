@@ -199,6 +199,12 @@ h2 { font-size: clamp(2rem, 8vw, 3.2rem); margin: 10px 0 16px; }
 .tour-card h2 { margin: 7px 0 12px; font-size: 2.1rem; }.tour-text { min-height: 72px; margin: 0; color: var(--muted); line-height: 1.6; }
 .tour-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 24px; }.tour-skip { margin-right: auto; border: 0; color: var(--muted); background: transparent; font-weight: 700; }
 .confirm-modal { position: relative; width: min(100%, 390px); padding: 24px; border: 1px solid rgba(255,255,255,.7); border-radius: 24px; background: white; box-shadow: 0 28px 80px rgba(23,16,25,.28); animation: modal-in .18s ease-out; }
+.photo-crop-modal { width: min(100%, 560px); padding: 24px; border: 1px solid rgba(255,255,255,.7); border-radius: 24px; background: white; box-shadow: 0 28px 80px rgba(23,16,25,.28); animation: modal-in .18s ease-out; }
+.photo-crop-modal h3 { margin: 0 0 5px; font-size: 1.25rem; }
+.crop-help { margin: 0 0 16px; color: var(--muted); font-size: .85rem; line-height: 1.5; }
+.crop-stage { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 18px; background: #171019; }
+.crop-zoom { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; margin-top: 16px; color: var(--muted); font-size: .8rem; font-weight: 700; }
+.crop-zoom input { width: 100%; accent-color: var(--pink); }
 .confirm-modal h3 { margin: 14px 0 7px; font-size: 1.2rem; }
 .confirm-modal p { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.55; }
 .modal-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; color: var(--pink-dark); background: #fff0f6; }

@@ -24,6 +24,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Crown, Globe2, GripVertical, ImagePlus, LockKeyhole, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import Cropper, { type Area } from "react-easy-crop";
 
 type QueenDraft = { id: string; name: string; file?: File; preview?: string; photoError?: string };
 type PersonDraft = { name: string };
@@ -32,6 +33,7 @@ const MAX_PEOPLE = 100;
 const MAX_PHOTO_SIZE = 5_000_000;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const QUEEN_PAGE_SIZE = 20;
+const CROPPED_IMAGE_SIZE = 1000;
 
 function newQueen(name = ""): QueenDraft {
    return { id: crypto.randomUUID(), name };
@@ -88,6 +90,67 @@ function SortableQueenDraft({ queen, index, duplicate, canDelete, onChange, onPh
    );
 }
 
+type PhotoCropModalProps = {
+   source: string;
+   saving: boolean;
+   onCancel: () => void;
+   onConfirm: (area: Area) => void;
+   t: (key: string, values?: Record<string, string | number>) => string;
+};
+
+function PhotoCropModal({ source, saving, onCancel, onConfirm, t }: PhotoCropModalProps) {
+   const [crop, setCrop] = useState({ x: 0, y: 0 });
+   const [zoom, setZoom] = useState(1);
+   const [area, setArea] = useState<Area | null>(null);
+
+   useEffect(() => {
+      const handleKey = (event: KeyboardEvent) => {
+         if (event.key === "Escape" && !saving) onCancel();
+      };
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKey);
+      return () => {
+         document.body.style.overflow = "";
+         window.removeEventListener("keydown", handleKey);
+      };
+   }, [onCancel, saving]);
+
+   return (
+      <div className="modal-backdrop crop-backdrop" onMouseDown={(event) => event.target === event.currentTarget && !saving && onCancel()}>
+         <section className="photo-crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-title">
+            <div>
+               <p className="eyebrow">{t("adjustPhoto")}</p>
+               <h3 id="crop-title">{t("cropPhotoTitle")}</h3>
+               <p className="crop-help">{t("cropPhotoHelp")}</p>
+            </div>
+            <div className="crop-stage">
+               <Cropper
+                  image={source}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="rect"
+                  showGrid
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={(_, pixels) => setArea(pixels)}
+               />
+            </div>
+            <label className="crop-zoom">
+               <span>{t("zoom")}</span>
+               <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
+            </label>
+            <div className="modal-actions">
+               <button type="button" className="btn btn-modal-cancel" onClick={onCancel} disabled={saving}>{t("cancel")}</button>
+               <button type="button" className="btn btn-modal-primary" onClick={() => area && onConfirm(area)} disabled={saving || !area}>
+                  {saving ? t("croppingPhoto") : t("useCrop")}
+               </button>
+            </div>
+         </section>
+      </div>
+   );
+}
+
 export default function CreateRoom() {
    const { t, error: translateError } = useI18n();
    const [title, setTitle] = useState("");
@@ -103,6 +166,8 @@ export default function CreateRoom() {
    const [templateLoading, setTemplateLoading] = useState(false);
    const [templateLoaded, setTemplateLoaded] = useState(false);
    const [visibleQueenCount, setVisibleQueenCount] = useState(QUEEN_PAGE_SIZE);
+   const [photoToCrop, setPhotoToCrop] = useState<{ index: number; file: File; source: string } | null>(null);
+   const [croppingPhoto, setCroppingPhoto] = useState(false);
    const [error, setError] = useState("");
    const previewUrls = useRef(new Set<string>());
    const templateRequested = useRef(false);
@@ -177,19 +242,44 @@ export default function CreateRoom() {
    function pickPhoto(index: number, event: ChangeEvent<HTMLInputElement>) {
       const file = event.target.files?.[0];
       if (!file) return;
-      const currentPreview = queens[index].preview;
+      event.target.value = "";
       if (!PHOTO_TYPES.has(file.type) || file.size > MAX_PHOTO_SIZE) {
-         event.target.value = "";
          updateQueen(index, { photoError: t("invalidQueenPhoto") });
          return;
       }
-      if (currentPreview) {
-         URL.revokeObjectURL(currentPreview);
-         previewUrls.current.delete(currentPreview);
+      const source = URL.createObjectURL(file);
+      previewUrls.current.add(source);
+      setPhotoToCrop({ index, file, source });
+   }
+
+   function cancelPhotoCrop() {
+      if (!photoToCrop) return;
+      URL.revokeObjectURL(photoToCrop.source);
+      previewUrls.current.delete(photoToCrop.source);
+      setPhotoToCrop(null);
+   }
+
+   async function confirmPhotoCrop(area: Area) {
+      if (!photoToCrop) return;
+      setCroppingPhoto(true);
+      try {
+         const file = await cropPhoto(photoToCrop.file, area);
+         const currentPreview = queens[photoToCrop.index]?.preview;
+         if (currentPreview) {
+            URL.revokeObjectURL(currentPreview);
+            previewUrls.current.delete(currentPreview);
+         }
+         URL.revokeObjectURL(photoToCrop.source);
+         previewUrls.current.delete(photoToCrop.source);
+         const preview = URL.createObjectURL(file);
+         previewUrls.current.add(preview);
+         updateQueen(photoToCrop.index, { file, preview, photoError: undefined });
+         setPhotoToCrop(null);
+      } catch {
+         updateQueen(photoToCrop.index, { photoError: t("cropPhotoFailed") });
+      } finally {
+         setCroppingPhoto(false);
       }
-      const preview = URL.createObjectURL(file);
-      previewUrls.current.add(preview);
-      updateQueen(index, { file, preview, photoError: undefined });
    }
 
    function removeQueen(index: number) {
@@ -263,6 +353,7 @@ export default function CreateRoom() {
    }
 
    return (
+      <>
       <main className="shell">
          <div className="topbar">
             <a className="brand" href="/">
@@ -442,6 +533,16 @@ export default function CreateRoom() {
             </button>
          </form>
       </main>
+      {photoToCrop && (
+         <PhotoCropModal
+            source={photoToCrop.source}
+            saving={croppingPhoto}
+            onCancel={cancelPhotoCrop}
+            onConfirm={confirmPhotoCrop}
+            t={t}
+         />
+      )}
+      </>
    );
 }
 
@@ -452,4 +553,20 @@ function duplicateIndexes(items: Array<{ name: string }>) {
       if (normalized) indexes.set(normalized, [...(indexes.get(normalized) || []), index]);
    });
    return new Set([...indexes.values()].filter((matches) => matches.length > 1).flat());
+}
+
+async function cropPhoto(file: File, area: Area) {
+   const image = await createImageBitmap(file);
+   const canvas = document.createElement("canvas");
+   canvas.width = CROPPED_IMAGE_SIZE;
+   canvas.height = CROPPED_IMAGE_SIZE;
+   const context = canvas.getContext("2d");
+   if (!context) throw new Error("Canvas is not available");
+   context.drawImage(image, area.x, area.y, area.width, area.height, 0, 0, CROPPED_IMAGE_SIZE, CROPPED_IMAGE_SIZE);
+   image.close();
+   const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Could not crop image")), "image/jpeg", 0.9);
+   });
+   const baseName = file.name.replace(/\.[^.]+$/, "") || "queen";
+   return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
 }
