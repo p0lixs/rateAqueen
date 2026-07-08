@@ -21,7 +21,7 @@ export async function GET(
    const { data: event } = await supabase
       .from("events")
       .select(
-         "id,title,owner_name,status,queens(image_url,sort_order),invitations(has_voted)",
+         "id,title,description,owner_name,status,queens(image_url,sort_order),invitations(has_voted)",
       )
       .eq("public_token", token)
       .eq("visibility", "public")
@@ -52,6 +52,7 @@ export async function GET(
       ).data;
    return deviceResponse(deviceKey, {
       title: event.title,
+      description: event.description,
       owner_name: event.owner_name,
       status: event.status,
       image_url:

@@ -13,6 +13,7 @@ export type Invitation = {
 
 export type EventInfo = {
   title: string;
+  description: string | null;
   owner_name: string | null;
   status: "registration" | "voting" | "results";
   queens: Queen[];

@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const supabase = getSupabaseAdmin();
   const { data: invitation, error } = await supabase
     .from("invitations")
-    .select("id,event_id,name,nickname,has_voted,user_id,events(title,owner_name,status,visibility,queens(id,name,image_url,sort_order))")
+    .select("id,event_id,name,nickname,has_voted,user_id,events(title,description,owner_name,status,visibility,queens(id,name,image_url,sort_order))")
     .eq("token", token)
     .single();
   if (error || !invitation) return NextResponse.json({ error: API_ERROR.INVALID_INVITATION }, { status: 404 });
@@ -32,6 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
 
   return NextResponse.json({
     title: event.title,
+    description: event.description,
     owner_name: event.owner_name,
     status: event.status,
     queens,

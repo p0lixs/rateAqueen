@@ -6,7 +6,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
   const { token } = await params;
   const { data: event } = await getSupabaseAdmin()
     .from("events")
-    .select("title,owner_name,status,invitations(has_voted)")
+    .select("title,description,owner_name,status,invitations(has_voted)")
     .eq("public_token", token)
     .eq("visibility", "public")
     .maybeSingle();
@@ -14,6 +14,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
   if (!event) return NextResponse.json({ error: API_ERROR.PUBLIC_ROOM_NOT_FOUND }, { status: 404 });
   return NextResponse.json({
     title: event.title,
+    description: event.description,
     owner_name: event.owner_name,
     status: event.status,
     members: event.invitations.length,

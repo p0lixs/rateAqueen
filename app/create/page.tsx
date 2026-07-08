@@ -3,6 +3,7 @@
 import AppMenu from "@/components/app-menu";
 import { useI18n } from "@/components/i18n-provider";
 import { API_ERROR } from "@/lib/api-errors";
+import { restrictToVerticalAxis } from "@/lib/dnd";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import {
    closestCenter,
@@ -154,6 +155,7 @@ function PhotoCropModal({ source, saving, onCancel, onConfirm, t }: PhotoCropMod
 export default function CreateRoom() {
    const { t, error: translateError } = useI18n();
    const [title, setTitle] = useState("");
+   const [description, setDescription] = useState("");
    const [queens, setQueens] = useState<QueenDraft[]>([
       { id: "initial-1", name: "" },
       { id: "initial-2", name: "" },
@@ -212,6 +214,7 @@ export default function CreateRoom() {
                .sort((a, b) => a.sort_order - b.sort_order)
                .map((queen, index) => ({ id: `template-${index}`, name: queen.name }));
             setTitle(t("copyTitle", { title: template.title }).slice(0, 80));
+            setDescription(template.description || "");
             setQueens(templateQueens.length >= 2 ? templateQueens : [newQueen(), newQueen()]);
             setPeople(
                template.visibility === "private" && template.invitations.length
@@ -319,6 +322,7 @@ export default function CreateRoom() {
       setLoading(true);
       const form = new FormData();
       form.set("title", title.trim());
+      form.set("description", description.trim());
       form.set("queens", JSON.stringify(queens.map((queen) => ({ name: queen.name.trim() }))));
       form.set(
          "people",
@@ -391,6 +395,22 @@ export default function CreateRoom() {
                />
             </div>
 
+            <div className="field">
+               <label htmlFor="description">{t("roomDescription")}</label>
+               <textarea
+                  id="description"
+                  className="input textarea"
+                  placeholder={t("roomDescriptionPlaceholder")}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  maxLength={500}
+                  rows={4}
+               />
+               <span className="field-hint description-hint">
+                  {t("optionalDescription")} · {description.length}/500
+               </span>
+            </div>
+
             <div className="section-title">
                <h3>{t("roomType")}</h3>
             </div>
@@ -451,7 +471,13 @@ export default function CreateRoom() {
                <h3>{t("queens")}</h3>
                <span className="count">{t("queensCount", { count: queens.length })}</span>
             </div>
-            <DndContext id="create-queens" sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragQueen}>
+            <DndContext
+               id="create-queens"
+               sensors={sensors}
+               collisionDetection={closestCenter}
+               modifiers={[restrictToVerticalAxis]}
+               onDragEnd={dragQueen}
+            >
                <SortableContext
                   items={queens.slice(0, visibleQueenCount).map((queen) => queen.id)}
                   strategy={verticalListSortingStrategy}

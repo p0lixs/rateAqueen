@@ -10,6 +10,7 @@ import { API_ERROR } from "@/lib/api-errors";
 
 type AdminData = {
   title: string;
+  description: string | null;
   owner_name: string | null;
   status: "registration" | "voting" | "results";
   visibility: "private" | "public";
@@ -107,6 +108,7 @@ export default function ManageEvent({ token }: { token: string }) {
       <section className="hero">
         <p className="eyebrow">{t("organizerPanel")}</p>
         <h2>{data.title}</h2>
+        {data.description && <p className="room-description">{data.description}</p>}
         <p>{t("organizedBy", { name: data.owner_name || t("unknownOrganizer") })}</p>
         <span className="room-kind">{data.visibility === "public" ? <><Globe2 size={13} /> {t("publicRoom")}</> : <><LockKeyhole size={13} /> {t("privateRoom")}</>}</span>
         <p className="lede">{data.visibility === "public" ? t("publicManageLead") : t("privateManageLead")}</p>

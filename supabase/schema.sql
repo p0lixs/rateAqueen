@@ -4,6 +4,7 @@ create extension if not exists pgcrypto;
 create table public.events (
   id uuid primary key default gen_random_uuid(),
   title text not null check (char_length(title) between 1 and 80),
+  description text check (description is null or char_length(description) <= 500),
   admin_token text not null unique,
   visibility text not null default 'private' check (visibility in ('private', 'public')),
   public_token text unique,

@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 type NamedInput = { name: string };
 
 const MAX_TITLE_LENGTH = 80;
+const MAX_DESCRIPTION_LENGTH = 500;
 const MAX_NAME_LENGTH = 60;
 const MAX_PEOPLE = 100;
 const MAX_PHOTO_SIZE = 5_000_000;
@@ -28,18 +29,19 @@ export async function POST(request: Request) {
     if (!user) return NextResponse.json({ error: API_ERROR.AUTH_REQUIRED_CREATE }, { status: 401 });
     const form = await request.formData();
     const title = String(form.get("title") || "").trim();
+    const description = String(form.get("description") || "").trim();
     const queens = parseNamedInputs(form.get("queens"));
     const people = parseNamedInputs(form.get("people"));
     const visibility = String(form.get("visibility") || "private") === "public" ? "public" : "private";
     const status = String(form.get("startMode") || "voting") === "registration" ? "registration" : "voting";
 
-    validateInputs({ title, queens, people, visibility, form });
+    validateInputs({ title, description, queens, people, visibility, form });
 
     supabase = getSupabaseAdmin();
     const adminToken = createToken();
     const { data: createdEvent, error: eventError } = await supabase
       .from("events")
-      .insert({ title, admin_token: adminToken, owner_id: user.id, owner_name: usernameFromUser(user), visibility, status, public_token: visibility === "public" ? createToken() : null })
+      .insert({ title, description: description || null, admin_token: adminToken, owner_id: user.id, owner_name: usernameFromUser(user), visibility, status, public_token: visibility === "public" ? createToken() : null })
       .select("id")
       .single();
     if (eventError || !createdEvent) throw eventError || new Error("Event insert returned no data");
@@ -98,14 +100,15 @@ function parseNamedInputs(value: FormDataEntryValue | null): NamedInput[] {
   });
 }
 
-function validateInputs({ title, queens, people, visibility, form }: {
+function validateInputs({ title, description, queens, people, visibility, form }: {
   title: string;
+  description: string;
   queens: NamedInput[];
   people: NamedInput[];
   visibility: "private" | "public";
   form: FormData;
 }) {
-  if (!title || title.length > MAX_TITLE_LENGTH || queens.length < 2 || (visibility === "private" && people.length < 1)) {
+  if (!title || title.length > MAX_TITLE_LENGTH || description.length > MAX_DESCRIPTION_LENGTH || queens.length < 2 || (visibility === "private" && people.length < 1)) {
     throw new ApiRouteError(API_ERROR.INCOMPLETE_DATA);
   }
   if (people.length > MAX_PEOPLE) throw new ApiRouteError(API_ERROR.ROOM_LIMITS_EXCEEDED);

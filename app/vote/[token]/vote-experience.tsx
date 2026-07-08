@@ -4,6 +4,7 @@ import ConfirmModal from "@/components/confirm-modal";
 import { useI18n } from "@/components/i18n-provider";
 import SiteHeader from "@/components/site-header";
 import { API_ERROR } from "@/lib/api-errors";
+import { restrictToVerticalAxis } from "@/lib/dnd";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import type { EventInfo, Queen } from "@/lib/types";
 import {
@@ -246,6 +247,7 @@ export default function VoteExperience({ token }: { token: string }) {
                {t("hello", { name: data.voter.nickname })}
             </p>
             <h1>{data.title}</h1>
+            {data.description && <p className="room-description">{data.description}</p>}
             <p>
                {t("organizedBy", {
                   name: data.owner_name || t("unknownOrganizer"),
@@ -256,6 +258,7 @@ export default function VoteExperience({ token }: { token: string }) {
          <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis]}
             onDragEnd={dragEnd}
          >
             <SortableContext

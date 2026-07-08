@@ -42,6 +42,8 @@ Para guardar y mostrar el nombre de usuario de la persona titular sin exponer su
 
 Para garantizar que los nombres de usuario sean únicos y migrar las cuentas existentes, ejecuta [`supabase/migrations/010_unique_usernames.sql`](supabase/migrations/010_unique_usernames.sql) después de la migración 009. Esta migración debe ejecutarse con el rol administrativo `postgres`, nunca concediendo acceso a `auth.users` al rol `authenticated`.
 
+Para permitir una descripción opcional en cada sala, ejecuta [`supabase/migrations/011_event_description.sql`](supabase/migrations/011_event_description.sql) después de la migración 010.
+
 4. Instala y ejecuta:
 
 ```bash

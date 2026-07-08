@@ -10,12 +10,13 @@ vi.mock("@/lib/supabase", () => ({ getSupabaseAdmin, getUserFromRequest }));
 
 import { POST } from "./route";
 
-function createRequest(overrides: { queens?: unknown; people?: unknown; photo?: File; visibility?: string } = {}) {
+function createRequest(overrides: { queens?: unknown; people?: unknown; photo?: File; visibility?: string; description?: string } = {}) {
   const form = new FormData();
   form.set("title", "All Stars");
   form.set("queens", JSON.stringify(overrides.queens ?? [{ name: "Alba" }, { name: "Berta" }]));
   form.set("people", JSON.stringify(overrides.people ?? []));
   form.set("visibility", overrides.visibility ?? "public");
+  if (overrides.description !== undefined) form.set("description", overrides.description);
   if (overrides.photo) form.set("photo_0", overrides.photo);
   return new Request("https://example.test/api/events", { method: "POST", body: form });
 }
@@ -25,12 +26,13 @@ function supabaseMock(options: { queenError?: unknown; uploadError?: unknown } =
   const upload = vi.fn().mockResolvedValue({ error: options.uploadError ?? null });
   const eq = vi.fn().mockResolvedValue({ error: null });
   const deleteEvent = vi.fn(() => ({ eq }));
+  const eventInsert = vi.fn(() => ({
+    select: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: { id: "event-1" }, error: null }) })),
+  }));
   const from = vi.fn((table: string) => {
     if (table === "events") {
       return {
-        insert: vi.fn(() => ({
-          select: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: { id: "event-1" }, error: null }) })),
-        })),
+        insert: eventInsert,
         delete: deleteEvent,
       };
     }
@@ -41,7 +43,7 @@ function supabaseMock(options: { queenError?: unknown; uploadError?: unknown } =
     remove,
     getPublicUrl: vi.fn(() => ({ data: { publicUrl: "https://images.test/queen.jpg" } })),
   };
-  return { client: { from, storage: { from: vi.fn(() => bucket) } }, remove, deleteEvent, eq };
+  return { client: { from, storage: { from: vi.fn(() => bucket) } }, remove, deleteEvent, eventInsert, eq };
 }
 
 describe("POST /api/events", () => {
@@ -79,6 +81,24 @@ describe("POST /api/events", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toHaveProperty("adminToken");
+  });
+
+  it("stores a trimmed optional description", async () => {
+    const mock = supabaseMock();
+    getSupabaseAdmin.mockReturnValue(mock.client);
+
+    const response = await POST(createRequest({ description: "  Mi explicación  " }));
+
+    expect(response.status).toBe(200);
+    expect(mock.eventInsert).toHaveBeenCalledWith(expect.objectContaining({ description: "Mi explicación" }));
+  });
+
+  it("rejects descriptions longer than 500 characters before writing", async () => {
+    const response = await POST(createRequest({ description: "x".repeat(501) }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: API_ERROR.INCOMPLETE_DATA });
+    expect(getSupabaseAdmin).not.toHaveBeenCalled();
   });
 
   it("rejects private rooms with more than 100 participants before writing", async () => {
