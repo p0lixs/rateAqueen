@@ -3,4 +3,4 @@ alter table public.events
   check (owner_name is null or char_length(owner_name) between 2 and 40);
 
 comment on column public.events.owner_name is
-  'Public display name captured from the owner account; email is never exposed.';
+  'Public username captured from the owner account; email is never exposed.';

@@ -38,7 +38,9 @@ Para permitir una fase de inscripción antes de abrir la votación en eventos pr
 
 Para abrir las salas públicas sin registro y limitar cada dispositivo a una participación, ejecuta [`supabase/migrations/008_anonymous_public_rooms.sql`](supabase/migrations/008_anonymous_public_rooms.sql) después de la migración 007.
 
-Para guardar y mostrar el nombre público de la persona titular sin exponer su correo, ejecuta [`supabase/migrations/009_event_owner_name.sql`](supabase/migrations/009_event_owner_name.sql) después de la migración 008.
+Para guardar y mostrar el nombre de usuario de la persona titular sin exponer su correo, ejecuta [`supabase/migrations/009_event_owner_name.sql`](supabase/migrations/009_event_owner_name.sql) después de la migración 008.
+
+Para garantizar que los nombres de usuario sean únicos y migrar las cuentas existentes, ejecuta [`supabase/migrations/010_unique_usernames.sql`](supabase/migrations/010_unique_usernames.sql) después de la migración 009. Esta migración debe ejecutarse con el rol administrativo `postgres`, nunca concediendo acceso a `auth.users` al rol `authenticated`.
 
 4. Instala y ejecuta:
 

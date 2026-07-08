@@ -1,5 +1,6 @@
 export const API_ERROR = {
    INVALID_NAME: "INVALID_NAME",
+   USERNAME_CHECK_FAILED: "USERNAME_CHECK_FAILED",
    DASHBOARD_LOAD_FAILED: "DASHBOARD_LOAD_FAILED",
    ROOM_OPEN_FAILED: "ROOM_OPEN_FAILED",
    PARTICIPANT_ADD_FAILED: "PARTICIPANT_ADD_FAILED",
@@ -45,6 +46,7 @@ export type ApiErrorCode = (typeof API_ERROR)[keyof typeof API_ERROR];
 const messages: Record<"es" | "en", Record<ApiErrorCode, string>> = {
    es: {
       INVALID_NAME: "Introduce un nombre válido",
+      USERNAME_CHECK_FAILED: "No se pudo comprobar el nombre de usuario",
       DASHBOARD_LOAD_FAILED: "No se pudieron cargar las salas",
       ROOM_OPEN_FAILED: "No se pudo abrir la sala",
       PARTICIPANT_ADD_FAILED: "No se pudo añadir la participante",
@@ -94,6 +96,7 @@ const messages: Record<"es" | "en", Record<ApiErrorCode, string>> = {
    },
    en: {
       INVALID_NAME: "Enter a valid name",
+      USERNAME_CHECK_FAILED: "The username could not be checked",
       DASHBOARD_LOAD_FAILED: "Rooms could not be loaded",
       ROOM_OPEN_FAILED: "The room could not be opened",
       PARTICIPANT_ADD_FAILED: "The participant could not be added",

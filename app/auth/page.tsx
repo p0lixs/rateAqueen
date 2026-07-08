@@ -10,7 +10,7 @@ export default function AuthPage() {
   const { t, language } = useI18n();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -27,14 +27,26 @@ export default function AuthPage() {
     const supabase = getSupabaseBrowser();
     const next = new URLSearchParams(window.location.search).get("next") || "/";
     if (mode === "signup") {
-      const cleanDisplayName = displayName.trim();
-      if (cleanDisplayName.length < 2 || cleanDisplayName.length > 40) {
-        setError(t("publicNameLength"));
+      const cleanUsername = username.trim();
+      if (cleanUsername.length < 2 || cleanUsername.length > 40) {
+        setError(t("usernameLength"));
         setLoading(false);
         return;
       }
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`, data: { language, display_name: cleanDisplayName } } });
-      if (error) setError(translate(error.message, language));
+      const availabilityResponse = await fetch(`/api/usernames?username=${encodeURIComponent(cleanUsername)}`, { cache: "no-store" });
+      const availability = await availabilityResponse.json();
+      if (!availabilityResponse.ok) {
+        setError(t("usernameCheckFailed"));
+        setLoading(false);
+        return;
+      }
+      if (!availability.available) {
+        setError(t("usernameTaken"));
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth?next=${encodeURIComponent(next)}`, data: { language, username: cleanUsername, display_name: cleanUsername } } });
+      if (error) setError(error.message.includes("username") || error.message.includes("Database error saving new user") ? t("usernameTaken") : translate(error.message, language));
       else if (data.session) window.location.href = next;
       else setMessage(t("confirmEmail"));
     } else {
@@ -52,7 +64,7 @@ export default function AuthPage() {
       <p className="eyebrow">{mode === "login" ? t("welcomeBack") : t("joinGame")}</p>
       <h2>{mode === "login" ? t("signIn") : t("createAccount")}</h2>
       <form onSubmit={submit}>
-        {mode === "signup" && <div className="field"><label htmlFor="display-name">{t("publicName")}</label><input id="display-name" className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required minLength={2} maxLength={40} autoComplete="nickname" /><small>{t("publicNameHelp")}</small></div>}
+        {mode === "signup" && <div className="field"><label htmlFor="username">{t("username")}</label><input id="username" className="input" value={username} onChange={(e) => setUsername(e.target.value)} required minLength={2} maxLength={40} autoComplete="username" /><small>{t("usernameHelp")}</small></div>}
         <div className="field"><label htmlFor="email">{t("email")}</label><input id="email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></div>
         <div className="field"><label htmlFor="password">{t("password")}</label><input id="password" className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete={mode === "login" ? "current-password" : "new-password"} /></div>
         {error && <div className="notice error">{error}</div>}{message && <div className="notice">{message}</div>}

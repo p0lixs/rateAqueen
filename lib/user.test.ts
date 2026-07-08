@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { displayNameFromUser } from "./user";
+import { usernameFromUser } from "./user";
 
-describe("displayNameFromUser", () => {
+describe("usernameFromUser", () => {
   it("returns a trimmed valid public name", () => {
-    expect(displayNameFromUser({ user_metadata: { display_name: "  Sasha  " } })).toBe("Sasha");
+    expect(usernameFromUser({ user_metadata: { username: "  Sasha  " } })).toBe("Sasha");
+  });
+
+  it("supports legacy display_name metadata", () => {
+    expect(usernameFromUser({ user_metadata: { display_name: "Legacy" } })).toBe("Legacy");
   });
 
   it.each([undefined, null, "", "A", "x".repeat(41)])("rejects invalid names", (display_name) => {
-    expect(displayNameFromUser({ user_metadata: { display_name } })).toBeNull();
+    expect(usernameFromUser({ user_metadata: { display_name } })).toBeNull();
   });
 });

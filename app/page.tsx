@@ -8,7 +8,7 @@ import { useI18n } from "@/components/i18n-provider";
 import OnboardingTour from "@/components/onboarding-tour";
 import AppMenu from "@/components/app-menu";
 import { API_ERROR } from "@/lib/api-errors";
-import { displayNameFromUser } from "@/lib/user";
+import { usernameFromUser } from "@/lib/user";
 
 type Room = {
   title: string;
@@ -73,7 +73,7 @@ export default function Home() {
     <main className="shell wide">
       <div className="topbar"><a className="brand" href="/"><span className="brand-mark"><Crown size={18} /></span> Rate a Queen</a><AppMenu onHelp={() => setShowTutorial(true)} /></div>
       <section className="dashboard-head">
-        <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{displayNameFromUser(user) || t("unknownOrganizer")}</p></div>
+        <div><p className="eyebrow">{t("yourDashboard")}</p><h2>{view === "created" ? t("createdByMe") : view === "joined" ? t("roomsIJoined") : t("myRooms")}</h2><p className="lede">{usernameFromUser(user) || t("unknownOrganizer")}</p></div>
         <div className="dashboard-actions"><a className="btn btn-soft" href="/discover"><Compass size={17} /> {t("explorePublic")}</a><a className="btn btn-dark" href="/create"><Plus size={17} /> {t("newRoom")}</a></div>
       </section>
       {error && <div className="notice error">{error}</div>}

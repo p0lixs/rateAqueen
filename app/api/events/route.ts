@@ -3,7 +3,7 @@ import { API_ERROR, type ApiErrorCode } from "@/lib/api-errors";
 import { createToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getUserFromRequest } from "@/lib/supabase";
-import { displayNameFromUser } from "@/lib/user";
+import { usernameFromUser } from "@/lib/user";
 
 export const runtime = "nodejs";
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const adminToken = createToken();
     const { data: createdEvent, error: eventError } = await supabase
       .from("events")
-      .insert({ title, admin_token: adminToken, owner_id: user.id, owner_name: displayNameFromUser(user), visibility, status, public_token: visibility === "public" ? createToken() : null })
+      .insert({ title, admin_token: adminToken, owner_id: user.id, owner_name: usernameFromUser(user), visibility, status, public_token: visibility === "public" ? createToken() : null })
       .select("id")
       .single();
     if (eventError) throw eventError;

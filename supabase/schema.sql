@@ -50,6 +50,30 @@ create unique index invitations_one_account_per_event_idx on public.invitations(
 create unique index invitations_one_device_per_event_idx on public.invitations(event_id, device_hash) where device_hash is not null;
 create index events_owner_id_idx on public.events(owner_id);
 create index events_public_search_idx on public.events(visibility, status, created_at desc);
+
+create table public.usernames (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  username text not null check (char_length(btrim(username)) between 2 and 40),
+  normalized_username text generated always as (lower(btrim(username))) stored unique,
+  created_at timestamptz not null default now()
+);
+
+alter table public.usernames enable row level security;
+
+create or replace function public.register_username_for_new_user()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  requested_username text := btrim(coalesce(new.raw_user_meta_data ->> 'username', new.raw_user_meta_data ->> 'display_name', ''));
+begin
+  if char_length(requested_username) not between 2 and 40 then raise exception 'invalid username'; end if;
+  insert into public.usernames (user_id, username) values (new.id, requested_username);
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created_register_username
+  after insert on auth.users
+  for each row execute function public.register_username_for_new_user();
 create index queens_event_id_idx on public.queens(event_id);
 create index ballots_event_id_idx on public.ballots(event_id);
 
