@@ -9,6 +9,7 @@ import { createToken } from "@/lib/security";
 import { getSupabaseAdmin, getUserFromRequest } from "@/lib/supabase";
 import { usernameFromUser } from "@/lib/user";
 import { NextResponse } from "next/server";
+import { closeExpiredEvent } from "@/lib/events";
 
 export async function GET(
    request: Request,
@@ -21,7 +22,7 @@ export async function GET(
    const { data: event } = await supabase
       .from("events")
       .select(
-         "id,title,description,owner_name,status,queens(image_url,sort_order),invitations(has_voted)",
+         "id,title,description,owner_name,status,closes_at,queens(image_url,sort_order),invitations(has_voted)",
       )
       .eq("public_token", token)
       .eq("visibility", "public")
@@ -31,6 +32,7 @@ export async function GET(
          { error: API_ERROR.PUBLIC_ROOM_NOT_FOUND },
          { status: 404 },
       );
+   const status = await closeExpiredEvent(supabase, event);
    let membership = user
       ? (
            await supabase
@@ -54,7 +56,8 @@ export async function GET(
       title: event.title,
       description: event.description,
       owner_name: event.owner_name,
-      status: event.status,
+      status,
+      closes_at: event.closes_at,
       image_url:
          [...event.queens].sort((a, b) => a.sort_order - b.sort_order)[0]
             ?.image_url || null,
@@ -83,7 +86,7 @@ export async function POST(
    const supabase = getSupabaseAdmin();
    const { data: event } = await supabase
       .from("events")
-      .select("id,status")
+      .select("id,status,closes_at")
       .eq("public_token", token)
       .eq("visibility", "public")
       .maybeSingle();
@@ -92,6 +95,7 @@ export async function POST(
          { error: API_ERROR.PUBLIC_ROOM_NOT_FOUND },
          { status: 404 },
       );
+   const status = await closeExpiredEvent(supabase, event);
    let existing = user
       ? (
            await supabase
@@ -112,7 +116,7 @@ export async function POST(
             .maybeSingle()
       ).data;
    if (existing) return deviceResponse(deviceKey, existing);
-   if (!["registration", "voting"].includes(event.status))
+   if (!["registration", "voting"].includes(status))
       return NextResponse.json(
          { error: API_ERROR.VOTING_CLOSED },
          { status: 409 },

@@ -15,6 +15,7 @@ type AdminData = {
   status: "registration" | "voting" | "results";
   visibility: "private" | "public";
   public_token: string | null;
+  closes_at: string | null;
   queens: { name: string; sort_order: number }[];
   invitations: { name: string; nickname: string; token: string; has_voted: boolean }[];
 };
@@ -116,6 +117,7 @@ export default function ManageEvent({ token }: { token: string }) {
       <div className="stat-grid">
         <div className="stat"><strong>{cast}/{data.invitations.length}</strong><span>{t("votesReceived")}</span></div>
         <div className="stat"><strong>{data.status === "results" ? t("published") : data.status === "registration" ? t("registrationOpen") : t("open")}</strong><span>{t("state")}</span></div>
+        {data.closes_at && <div className="stat"><strong>{new Date(data.closes_at).toLocaleString()}</strong><span>{t("scheduledClose")}</span></div>}
       </div>
       <div className="manage-actions">
         <a className="btn btn-soft" href={`/create?template=${encodeURIComponent(token)}`}><CopyPlus size={16} /> {t("duplicateRoom")}</a>

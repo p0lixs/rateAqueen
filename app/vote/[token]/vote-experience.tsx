@@ -32,7 +32,7 @@ import {
    LockKeyhole,
    Send,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 function SortableQueen({ queen, index }: { queen: Queen; index: number }) {
    const { t } = useI18n();
@@ -72,6 +72,34 @@ function SortableQueen({ queen, index }: { queen: Queen; index: number }) {
          >
             <GripVertical size={21} />
          </button>
+      </div>
+   );
+}
+
+function Countdown({ closesAt, onFinished }: { closesAt: string; onFinished: () => void }) {
+   const { t } = useI18n();
+   const [remaining, setRemaining] = useState(() => Math.max(0, new Date(closesAt).getTime() - Date.now()));
+   const finished = useRef(false);
+
+   useEffect(() => {
+      const tick = () => {
+         const next = Math.max(0, new Date(closesAt).getTime() - Date.now());
+         setRemaining(next);
+         if (next === 0 && !finished.current) {
+            finished.current = true;
+            onFinished();
+         }
+      };
+      tick();
+      const interval = window.setInterval(tick, 1_000);
+      return () => window.clearInterval(interval);
+   }, [closesAt, onFinished]);
+
+   return (
+      <div className="countdown" aria-live="polite">
+         <Hourglass size={16} />
+         <span>{t("closesIn")}</span>
+         <strong>{formatRemaining(remaining)}</strong>
       </div>
    );
 }
@@ -200,6 +228,7 @@ export default function VoteExperience({ token }: { token: string }) {
                <p className="eyebrow">{t("registered")}</p>
                <h2>{t("thanks", { name: data.voter.nickname })}</h2>
                <p className="lede">{t("waitingVotingOpen")}</p>
+               {data.closes_at && <Countdown closesAt={data.closes_at} onFinished={load} />}
                <div className="progress">
                   {data.votes_total} {t("registeredPeople")}
                </div>
@@ -223,6 +252,7 @@ export default function VoteExperience({ token }: { token: string }) {
                <p className="eyebrow">{t("voteReceived")}</p>
                <h2>{t("thanks", { name: data.voter.nickname })}</h2>
                <p className="lede">{t("savedAnonymous")}</p>
+               {data.closes_at && <Countdown closesAt={data.closes_at} onFinished={load} />}
                <div className="progress">
                   {data.votes_cast}/{data.votes_total}
                </div>
@@ -254,6 +284,7 @@ export default function VoteExperience({ token }: { token: string }) {
                })}
             </p>
             <p className="lede">{t("voteLead")}</p>
+            {data.closes_at && <Countdown closesAt={data.closes_at} onFinished={load} />}
          </section>
          <DndContext
             sensors={sensors}
@@ -298,4 +329,15 @@ export default function VoteExperience({ token }: { token: string }) {
          />
       </main>
    );
+}
+
+function formatRemaining(milliseconds: number) {
+   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+   const days = Math.floor(totalSeconds / 86_400);
+   const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+   const minutes = Math.floor((totalSeconds % 3_600) / 60);
+   const seconds = totalSeconds % 60;
+   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+   if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+   return `${minutes}m ${seconds}s`;
 }

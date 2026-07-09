@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getUserFromRequest } from "@/lib/supabase";
 import { API_ERROR } from "@/lib/api-errors";
+import { closeExpiredEvent } from "@/lib/events";
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = getSupabaseAdmin();
   const { data: invitation, error } = await supabase
     .from("invitations")
-    .select("id,event_id,name,nickname,has_voted,user_id,events(title,description,owner_name,status,visibility,queens(id,name,image_url,sort_order))")
+    .select("id,event_id,name,nickname,has_voted,user_id,events(id,title,description,owner_name,status,visibility,closes_at,queens(id,name,image_url,sort_order))")
     .eq("token", token)
     .single();
   if (error || !invitation) return NextResponse.json({ error: API_ERROR.INVALID_INVITATION }, { status: 404 });
@@ -16,6 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
   const user = await getUserFromRequest(request);
   const event = Array.isArray(invitation.events) ? invitation.events[0] : invitation.events;
   if (!event) return NextResponse.json({ error: API_ERROR.ROOM_NOT_FOUND }, { status: 404 });
+  const status = await closeExpiredEvent(supabase, event);
   if (event.visibility === "private" && user && !invitation.user_id) {
     const { data: existing } = await supabase.from("invitations").select("id,has_voted").eq("event_id", invitation.event_id).eq("user_id", user.id).maybeSingle();
     if (existing && existing.id !== invitation.id) {
@@ -34,7 +36,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     title: event.title,
     description: event.description,
     owner_name: event.owner_name,
-    status: event.status,
+    status,
+    closes_at: event.closes_at,
     queens,
     voter: { name: invitation.name, nickname: invitation.nickname, has_voted: invitation.has_voted },
     votes_cast: invitations?.filter((item) => item.has_voted).length || 0,

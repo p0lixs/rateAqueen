@@ -1,6 +1,7 @@
 import { getSupabaseAdmin, getUserFromRequest } from "@/lib/supabase";
 import { API_ERROR } from "@/lib/api-errors";
 import { NextResponse } from "next/server";
+import { closeExpiredEvent } from "@/lib/events";
 
 export async function POST(request: Request) {
    try {
@@ -12,6 +13,15 @@ export async function POST(request: Request) {
       if (!token || !Array.isArray(ranking))
          return NextResponse.json({ error: API_ERROR.INVALID_VOTE }, { status: 400 });
       const supabase = getSupabaseAdmin();
+      const { data: invitation } = await supabase
+         .from("invitations")
+         .select("events(id,status,closes_at)")
+         .eq("token", token)
+         .maybeSingle();
+      const event = invitation?.events && (Array.isArray(invitation.events) ? invitation.events[0] : invitation.events);
+      if (event && await closeExpiredEvent(supabase, event) === "results") {
+         return NextResponse.json({ error: API_ERROR.VOTING_CLOSED }, { status: 400 });
+      }
       const { data, error } = await supabase.rpc("submit_anonymous_ballot", {
          p_token: token,
          p_ranking: ranking,

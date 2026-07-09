@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createToken } from "@/lib/security";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { API_ERROR } from "@/lib/api-errors";
+import { closeExpiredEvent } from "@/lib/events";
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -12,9 +13,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   }
 
   const supabase = getSupabaseAdmin();
-  const { data: event, error } = await supabase.from("events").select("id,status,visibility").eq("admin_token", token).single();
+  const { data: event, error } = await supabase.from("events").select("id,status,visibility,closes_at").eq("admin_token", token).single();
   if (error || !event) return NextResponse.json({ error: API_ERROR.INVALID_ADMIN_LINK }, { status: 404 });
-  if (!["registration", "voting"].includes(event.status)) return NextResponse.json({ error: API_ERROR.VOTING_CLOSED }, { status: 409 });
+  const status = await closeExpiredEvent(supabase, event);
+  if (!["registration", "voting"].includes(status)) return NextResponse.json({ error: API_ERROR.VOTING_CLOSED }, { status: 409 });
   if (event.visibility === "public") return NextResponse.json({ error: API_ERROR.PUBLIC_MEMBERS_USE_GLOBAL_LINK }, { status: 409 });
 
   const { count } = await supabase.from("invitations").select("id", { count: "exact", head: true }).eq("event_id", event.id);

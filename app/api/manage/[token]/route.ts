@@ -1,37 +1,40 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin, getUserFromRequest } from "@/lib/supabase";
 import { API_ERROR } from "@/lib/api-errors";
+import { closeExpiredEvent } from "@/lib/events";
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from("events")
-    .select("id,title,description,owner_name,status,visibility,public_token,owner_id,queens(name,sort_order),invitations(name,nickname,token,has_voted,user_id)")
+    .select("id,title,description,owner_name,status,visibility,public_token,closes_at,owner_id,queens(name,sort_order),invitations(name,nickname,token,has_voted,user_id)")
     .eq("admin_token", token)
     .single();
   if (error || !data) return NextResponse.json({ error: API_ERROR.INVALID_ADMIN_LINK }, { status: 404 });
+  const status = await closeExpiredEvent(supabase, data);
   const user = await getUserFromRequest(request);
   if (user && !data.owner_id) await supabase.from("events").update({ owner_id: user.id }).eq("id", data.id).is("owner_id", null);
   const { id: _id, owner_id: _ownerId, ...response } = data;
-  return NextResponse.json(response, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ ...response, status }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const supabase = getSupabaseAdmin();
-  const { data: event, error } = await supabase.from("events").select("id,status").eq("admin_token", token).single();
+  const { data: event, error } = await supabase.from("events").select("id,status,closes_at").eq("admin_token", token).single();
   if (error || !event) return NextResponse.json({ error: API_ERROR.INVALID_ADMIN_LINK }, { status: 404 });
-  if (event.status === "results") return NextResponse.json({ status: "results" });
+  const status = await closeExpiredEvent(supabase, event);
+  if (status === "results") return NextResponse.json({ status: "results" });
 
   const { action } = await request.json().catch(() => ({ action: "close" })) as { action?: string };
   if (action === "open") {
-    if (event.status === "voting") return NextResponse.json({ status: "voting" });
+    if (status === "voting") return NextResponse.json({ status: "voting" });
     const { error: openError } = await supabase.from("events").update({ status: "voting" }).eq("id", event.id).eq("status", "registration");
     if (openError) return NextResponse.json({ error: API_ERROR.VOTING_OPEN_FAILED }, { status: 500 });
     return NextResponse.json({ status: "voting" });
   }
-  if (event.status === "registration") return NextResponse.json({ error: API_ERROR.VOTING_NOT_OPEN }, { status: 409 });
+  if (status === "registration") return NextResponse.json({ error: API_ERROR.VOTING_NOT_OPEN }, { status: 409 });
 
   const { count } = await supabase.from("ballots").select("id", { count: "exact", head: true }).eq("event_id", event.id);
   if (!count) return NextResponse.json({ error: API_ERROR.VOTE_REQUIRED_TO_CLOSE }, { status: 400 });

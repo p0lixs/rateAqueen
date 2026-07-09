@@ -9,7 +9,7 @@ import { API_ERROR } from "@/lib/api-errors";
 import { getSupabaseBrowser } from "@/lib/supabase-browser";
 import { usernameFromUser } from "@/lib/user";
 
-type RoomData = { title: string; description: string | null; owner_name: string | null; status: "registration" | "voting" | "results"; image_url: string | null; members: number; votes_cast: number; membership: { token: string; has_voted: boolean } | null };
+type RoomData = { title: string; description: string | null; owner_name: string | null; status: "registration" | "voting" | "results"; closes_at: string | null; image_url: string | null; members: number; votes_cast: number; membership: { token: string; has_voted: boolean } | null };
 
 export default function JoinPublicRoom({ token }: { token: string }) {
   const { t, error: translateError } = useI18n();

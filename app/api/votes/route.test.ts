@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API_ERROR } from "@/lib/api-errors";
 
-const { getSupabaseAdmin, getUserFromRequest, rpc } = vi.hoisted(() => ({
+const { getSupabaseAdmin, getUserFromRequest, rpc, from } = vi.hoisted(() => ({
   getSupabaseAdmin: vi.fn(),
   getUserFromRequest: vi.fn(),
   rpc: vi.fn(),
+  from: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase", () => ({
@@ -27,7 +28,8 @@ function voteRequest(body: unknown, authorization?: string) {
 describe("POST /api/votes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getSupabaseAdmin.mockReturnValue({ rpc });
+    from.mockReturnValue({ select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) })) })) });
+    getSupabaseAdmin.mockReturnValue({ rpc, from });
     getUserFromRequest.mockResolvedValue(null);
     rpc.mockResolvedValue({ data: "accepted", error: null });
   });

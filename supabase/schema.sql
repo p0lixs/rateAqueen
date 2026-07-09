@@ -11,6 +11,7 @@ create table public.events (
   owner_id uuid references auth.users(id) on delete set null,
   owner_name text check (owner_name is null or char_length(owner_name) between 2 and 40),
   status text not null default 'voting' check (status in ('registration', 'voting', 'results')),
+  closes_at timestamptz,
   owner_results_viewed_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -97,6 +98,7 @@ declare
   v_queen_count integer;
   v_valid_count integer;
   v_event_status text;
+  v_event_closes_at timestamptz;
 begin
   select * into v_invitation
   from public.invitations
@@ -110,10 +112,14 @@ begin
     raise exception 'already voted';
   end if;
 
-  select status into v_event_status
+  select status, closes_at into v_event_status, v_event_closes_at
   from public.events
   where id = v_invitation.event_id
   for update;
+  if v_event_status <> 'results' and v_event_closes_at is not null and v_event_closes_at <= now() then
+    update public.events set status = 'results' where id = v_invitation.event_id;
+    raise exception 'voting closed';
+  end if;
   if v_event_status <> 'voting' then
     raise exception 'voting closed';
   end if;

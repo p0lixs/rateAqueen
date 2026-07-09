@@ -7,10 +7,12 @@ export async function GET(request: Request) {
   const deviceKey = deviceKeyFromRequest(request) || createDeviceKey();
   const query = new URL(request.url).searchParams.get("q")?.trim().slice(0, 80) || "";
   const supabase = getSupabaseAdmin();
+  const now = new Date().toISOString();
   let roomsQuery = supabase.from("events")
-    .select("id,title,owner_name,status,public_token,created_at,queens(image_url,sort_order),invitations(has_voted)")
+    .select("id,title,owner_name,status,public_token,created_at,closes_at,queens(image_url,sort_order),invitations(has_voted)")
     .eq("visibility", "public")
     .in("status", ["registration", "voting"])
+    .or(`closes_at.is.null,closes_at.gt.${now}`)
     .order("created_at", { ascending: false })
     .limit(30);
   if (query) roomsQuery = roomsQuery.ilike("title", `%${query}%`);

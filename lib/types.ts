@@ -16,6 +16,7 @@ export type EventInfo = {
   description: string | null;
   owner_name: string | null;
   status: "registration" | "voting" | "results";
+  closes_at: string | null;
   queens: Queen[];
   voter: { name: string; nickname: string; has_voted: boolean };
   votes_cast: number;
